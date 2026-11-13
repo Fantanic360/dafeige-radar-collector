@@ -10,8 +10,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { CollectError, beijingDate, beijingHour, createClock, ensureDir, shortHash, writeJsonAtomic } from './core.mjs';
-import { activeSources, buildTargets, DEFAULT_PATHS, loadJsonConfig } from './config.mjs';
+import { CollectError, beijingDate, createClock, ensureDir, readJson, shortHash, writeJsonAtomic } from './core.mjs';
+import { execFileSync } from 'node:child_process';
+import { activeSources, buildTargets, DEFAULT_PATHS, loadJsonConfig, PKG_ROOT } from './config.mjs';
 import { createHttpClient } from './http.mjs';
 import { IdempotencyStore, RunLedger } from './ledger.mjs';
 import { canonicalUrl, postIdFor } from './normalize.mjs';
@@ -22,6 +23,24 @@ import { resolveAdapter } from '../adapters/registry.mjs';
 import { validateResult } from '../adapters/base.mjs';
 
 const HOUR = 3600_000;
+
+/** Where this build came from; null when the checkout has no git metadata. */
+let repoCache = null;
+export function repoInfo() {
+  if (repoCache) return repoCache;
+  let sha = null;
+  try {
+    sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: PKG_ROOT, encoding: 'utf8' }).trim();
+  } catch {
+    sha = null;
+  }
+  const cfg = readJson(path.join(DEFAULT_PATHS.config, 'repo.json'), null);
+  repoCache = {
+    url: process.env.RADAR_REPO_URL || cfg?.url || null,
+    sha,
+  };
+  return repoCache;
+}
 
 export class Runner {
   constructor({ env, logger, clock = createClock(), rootDir, configDir = null }) {
@@ -592,7 +611,8 @@ export function toExchangeResult({ runId, payload, targets, mode }) {
     checkedAt: o.checkedAt,
     requestedFrom: o.windowFrom,
     requestedTo: o.windowTo,
-    coveredFrom: o.windowFrom,
+    // A failed read covered nothing. Only a success may claim a covered interval.
+    coveredFrom: o.status === 'success' ? o.windowFrom : null,
     coveredTo: o.status === 'success' ? o.windowTo : null,
     status: o.status,
     pagesRead: o.pagesRead ?? 0,
@@ -632,9 +652,9 @@ export function toExchangeResult({ runId, payload, targets, mode }) {
     recommendations: [],
     engineeringDeliverables: {
       taskCode: 'F/P0-adapters',
-      repositoryUrl: null,
-      commitSha: null,
-      patchFile: null,
+      repositoryUrl: repoInfo().url,
+      commitSha: repoInfo().sha,
+      patchFile: 'integration/site/APPLY.md',
       setupFile: 'docs/RUNBOOK.md',
       testsFile: 'test/',
       realRunEvidenceFiles: [`evidence/${runId}/result.json`, `evidence/${runId}/payload.json`],

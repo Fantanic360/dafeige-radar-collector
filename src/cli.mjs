@@ -14,6 +14,7 @@
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import { createLogger, beijingIso, readJson } from './lib/core.mjs';
 import { configExists, DEFAULT_PATHS, loadEnv, loadJsonConfig, validateSources, buildTargets } from './lib/config.mjs';
 import { createHttpClient } from './lib/http.mjs';
@@ -229,6 +230,24 @@ async function cmdVerify(env, log) {
   }
 }
 
+/** Re-emit the 04 exchange file from a stored payload (useful after mapping fixes). */
+async function cmdExchange(env, log, args) {
+  const runId = args.run || null;
+  const evidenceRoot = path.join(ROOT, 'evidence');
+  const id = runId || fs.readdirSync(evidenceRoot).filter((d) => d.startsWith('run_')).sort().pop();
+  const dir = path.join(evidenceRoot, id);
+  const payload = readJson(path.join(dir, 'payload.json'), null);
+  if (!payload) {
+    process.stderr.write(`找不到 payload：${dir}\n`);
+    return 2;
+  }
+  const { toExchangeResult } = await import('./lib/runner.mjs');
+  const exchange = toExchangeResult({ runId: payload.runId || id, payload, targets: [], mode: 'mirror' });
+  fs.writeFileSync(path.join(dir, 'result.json'), `${JSON.stringify(exchange, null, 2)}\n`);
+  process.stdout.write(`已重写 ${path.relative(ROOT, path.join(dir, 'result.json'))}\n`);
+  return 0;
+}
+
 function cmdInventory(env, log) {
   const sourcesDoc = loadJsonConfig('sources.json');
   const adapterDoc = loadJsonConfig('adapters.json', { fallback: { overrides: {} } });
@@ -299,6 +318,8 @@ async function main() {
       return cmdVerify(env, log);
     case 'inventory':
       return cmdInventory(env, log);
+    case 'exchange':
+      return cmdExchange(env, log, args);
     default:
       process.stderr.write(`未知命令：${cmd}\n\n${usage()}`);
       return 2;

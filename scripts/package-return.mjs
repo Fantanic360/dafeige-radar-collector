@@ -193,6 +193,19 @@ try {
 const methodSrc = path.join(outDir, 'method.md');
 if (fs.existsSync(methodSrc)) fs.copyFileSync(methodSrc, path.join(pkgDir, 'method.md'));
 
+/* git provenance */
+try {
+  const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  const subject = execFileSync('git', ['log', '-1', '--format=%s'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  const remote = execFileSync('git', ['remote', 'get-url', 'origin'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  fs.writeFileSync(
+    path.join(pkgDir, 'code', 'git-commit.txt'),
+    `repository: ${remote}\ncommit: ${sha}\nshort: ${sha.slice(0, 7)}\nsubject: ${subject}\n`,
+  );
+} catch {
+  /* no git metadata: leave it out rather than inventing a sha */
+}
+
 /* checksums */
 const files = [];
 (function walk(dir) {
