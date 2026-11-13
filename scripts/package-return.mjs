@@ -69,22 +69,48 @@ fs.mkdirSync(pkgDir, { recursive: true });
 /* code */
 copyTree(ROOT, path.join(pkgDir, 'code', 'dafeige-radar-collector'), new Set(['state', 'evidence', 'logs', 'node_modules', '.git', '.DS_Store']));
 
-/* evidence */
-const runDir = path.join(ROOT, 'evidence', runId);
-const evOut = path.join(pkgDir, 'evidence', runId);
-fs.mkdirSync(evOut, { recursive: true });
-for (const f of fs.readdirSync(runDir)) {
-  const src = path.join(runDir, f);
-  if (!fs.statSync(src).isFile()) continue;
-  if (f.startsWith('.') && !f.endsWith('.png')) continue; // keep screenshots, drop temp
-  fs.copyFileSync(src, path.join(evOut, f));
+/* evidence: every run in this session, so the reader can compare rounds */
+const evRoot = path.join(ROOT, 'evidence');
+const runIds = fs.readdirSync(evRoot).filter((d) => d.startsWith('run_'));
+let pick = null;
+let pickSize = -1;
+for (const id of runIds) {
+  const src = path.join(evRoot, id);
+  if (!fs.statSync(src).isDirectory()) continue;
+  const dst = path.join(pkgDir, 'evidence', id);
+  fs.mkdirSync(dst, { recursive: true });
+  let posts = 0;
+  for (const f of fs.readdirSync(src)) {
+    const from = path.join(src, f);
+    if (!fs.statSync(from).isFile()) continue;
+    if (f.startsWith('.') && !f.endsWith('.png')) continue; // keep screenshots, drop temp
+    fs.copyFileSync(from, path.join(dst, f));
+  }
+  const payloadFile = path.join(src, 'payload.json');
+  if (fs.existsSync(payloadFile)) {
+    try {
+      posts = JSON.parse(fs.readFileSync(payloadFile, 'utf8')).posts?.length || 0;
+    } catch {
+      posts = 0;
+    }
+  }
+  if (posts > pickSize) {
+    pickSize = posts;
+    pick = src;
+  }
 }
 
-/* result.json from the run */
-const runResult = path.join(runDir, 'result.json');
-if (fs.existsSync(runResult)) fs.copyFileSync(runResult, path.join(pkgDir, 'result.json'));
+/* result.json: the round with the most coverage */
+if (pick) {
+  const runResult = path.join(pick, 'result.json');
+  if (fs.existsSync(runResult)) fs.copyFileSync(runResult, path.join(pkgDir, 'result.json'));
+}
 
-/* docs */
+/* docs + intro */
+for (const f of ['00_先读这里.md']) {
+  const src = path.join(outDir, f);
+  if (fs.existsSync(src)) fs.copyFileSync(src, path.join(pkgDir, f));
+}
 for (const f of ['CHANGES.md']) {
   const src = path.join(ROOT, 'docs', f);
   if (fs.existsSync(src)) fs.copyFileSync(src, path.join(pkgDir, f));

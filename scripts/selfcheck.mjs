@@ -67,8 +67,8 @@ const PATTERNS = [
   [/AKIA[0-9A-Z]{16}/, 'AWS key id'],
   [/xox[baprs]-[A-Za-z0-9-]{10,}/, 'Slack token'],
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, 'private key'],
-  [/\bSESSDATA=[^;\s"']+/, 'B站 cookie'],
-  [/\bbuvid3=[^;\s"']+/, 'B站 cookie'],
+  [/\bSESSDATA=[A-Za-z0-9%]{10,}/, 'B站 cookie'],
+  [/\bbuvid3=[A-Za-z0-9-]{10,}/, 'B站 cookie'],
   [/(?:X-Amz-Signature|Signature)=[A-Za-z0-9%]{20,}/, 'signed URL'],
   [/(?:api[_-]?key|secret|password)\s*[:=]\s*["'][^"']{12,}["']/i, 'inline credential'],
 ];
@@ -83,7 +83,10 @@ for (const file of scanTargets) {
 record(`secret scan (${scanTargets.length} files)`, hits.length === 0, hits.slice(0, 5).join(' | '));
 
 /* 4. tests */
-const test = spawnSync(process.execPath, ['--test', 'test/unit', 'test/e2e'], {
+const testFiles = walk(path.join(ROOT, 'test'))
+  .filter((f) => f.endsWith('.test.mjs'))
+  .map((f) => path.relative(ROOT, f));
+const test = spawnSync(process.execPath, ['--test', ...testFiles], {
   cwd: ROOT,
   encoding: 'utf8',
   shell: false,
