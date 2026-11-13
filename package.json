@@ -1,0 +1,41 @@
+{
+  "name": "dafeige-radar-collector",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Repeatable, resumable collection engine for 《大飞哥每日大报!》 — target planning, platform adapters, backoff policy, lease/idempotency, run ledger and public-mirror verification.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "bin": {
+    "radar-collect": "./src/cli.mjs"
+  },
+  "scripts": {
+    "doctor": "node src/cli.mjs doctor",
+    "plan": "node src/cli.mjs plan",
+    "run": "node src/cli.mjs run",
+    "verify": "node src/cli.mjs verify",
+    "inventory": "node src/cli.mjs inventory",
+    "test": "node --test test/unit/*.test.mjs",
+    "test:e2e": "node --test test/e2e/*.test.mjs",
+    "test:all": "node --test test/unit/*.test.mjs test/e2e/*.test.mjs",
+    "selfcheck": "node scripts/selfcheck.mjs"
+  },
+  "files": [
+    "src",
+    "config",
+    "docs",
+    "ops",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "collector",
+    "bilibili",
+    "rss",
+    "content-operations",
+    "agent"
+  ]
+}

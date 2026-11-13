@@ -1,0 +1,49 @@
+{
+  "version": "2026-11-14.1",
+  "note": "按 sourceId|platform 覆盖适配器行为。仅写已经核过或明确需要的项；未列出的走平台默认。",
+  "overrides": {
+    "kazike|GitHub": {
+      "adapter": "github",
+      "repos": ["KKKKhazix/agent-autoloop"],
+      "reason": "站内已核的官方发布来源是该仓库的 release，不是账号下全部仓库。"
+    },
+    "guizang|GitHub": {
+      "adapter": "github",
+      "repos": ["op7418/ComfyUI-Copilot", "op7418/Generative-AI-for-beginners-ds4"],
+      "reason": "歸藏的高频更新集中在少数工具仓库；其余仓库噪音大。"
+    },
+    "sv101|官网": {
+      "adapter": "rss",
+      "feedUrl": "https://sv101.fireside.fm/rss",
+      "reason": "Fireside 托管播客的固定 RSS 路径。"
+    },
+    "latent|官网": {
+      "adapter": "rss",
+      "feedUrl": "https://latent.space/feed",
+      "reason": "Substack 站点默认 feed 路径。"
+    },
+    "dankoe|官网": {
+      "adapter": "rss",
+      "feedUrl": "https://thedankoe.com/feed/",
+      "reason": "WordPress 默认 feed 路径。"
+    },
+    "dankoe|Newsletter": {
+      "adapter": "rss",
+      "feedUrl": "https://letters.thedankoe.com/feed",
+      "reason": "Substack newsletter feed。"
+    },
+    "greg|官网": {
+      "adapter": "rss",
+      "feedUrl": "https://www.gregisenberg.com/blog/rss.xml",
+      "reason": "Ghost/静态博客常见 rss.xml 路径；失败时自动回退到页面发现。"
+    }
+  },
+  "platformFallback": {
+    "官网": "rss",
+    "播客": "rss",
+    "Newsletter": "rss",
+    "主站": "rss",
+    "微信公众号": "wechat",
+    "小宇宙": "xiaoyuzhou"
+  }
+}

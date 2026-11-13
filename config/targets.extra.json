@@ -1,0 +1,22 @@
+{
+  "version": "2026-11-14.1",
+  "note": "采集器专用的补充目标：来源主页已核实，但站点 profileDirectory 里还没有对应的平台条目。只影响本地采集，不改站点资料；确认后可再用 /api/source-profiles 正式补挂。",
+  "targets": [
+    {
+      "sourceId": "xiaojun",
+      "platform": "小宇宙",
+      "label": "小宇宙·张小珺Jùn｜商业访谈录",
+      "url": "https://www.xiaoyuzhoufm.com/podcast/626b46ea9cbbf0451cf5a962",
+      "primary": true,
+      "reason": "该 URL 已是来源主链接（identity=verified），但未登记为 profiles 条目，导致播客单集长期无法进入采集。"
+    },
+    {
+      "sourceId": "kazike",
+      "platform": "微信公众号",
+      "label": "公众号·数字生命卡兹克（原文入口）",
+      "url": "https://mp.weixin.qq.com/s/ToplAo9NHP356Fu-hbYlsg",
+      "primary": false,
+      "reason": "仅用于单篇原文可达性探测；公众号没有公开列表接口，不会产生“已读列表”的记录。"
+    }
+  ]
+}

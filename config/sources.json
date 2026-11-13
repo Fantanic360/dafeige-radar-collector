@@ -1,0 +1,1205 @@
+{
+  "version": "2026-11-13.1",
+  "generatedAt": "2026-11-13T16:24:00.506164Z",
+  "source": "dafeige-agent-handoff-20261113/01_全部作者与当前检查.json",
+  "note": "sourceId 与站点一致；只含 24 个启用来源。候选与已移除来源不在此文件，不得自动恢复。",
+  "sources": [
+    {
+      "id": "liuxiaopai",
+      "name": "刘小排",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AI创业",
+      "entityType": "person",
+      "platform": "GitHub / X",
+      "identity": "verified",
+      "note": "本人 GitHub、X、B站“刘小排-”与“刘小排本排”、抖音“刘小排本排”均有归属依据。优先检查抖音与B站，账号归属和作品读取状态分别记录。",
+      "url": "https://github.com/liuxiaopai-ai",
+      "primaryPlatforms": [
+        "抖音",
+        "B站"
+      ],
+      "profiles": [
+        {
+          "platform": "GitHub",
+          "label": "GitHub",
+          "url": "https://github.com/liuxiaopai-ai",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/liuxiaopai-ai",
+          "evidenceNote": "本人 GitHub 资料标注 Liu Xiaopai／刘小排并链接 Raphael.app。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://x.com/bourneliu66",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/liuxiaopai-ai",
+          "evidenceNote": "本人 GitHub 资料直接链接 @bourneliu66。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "B站",
+          "label": "B站·刘小排-",
+          "url": "https://space.bilibili.com/3706923333454258",
+          "status": "verified",
+          "evidenceUrl": "https://www.bilibili.com/opus/1181089970329223171",
+          "evidenceNote": "浏览器实际读取作者主页、最新视频列表、全部动态列表，以及其原创专栏全文。专栏署名刘小排-，开篇自述我是刘小排，以第一人称讨论自己的Raphael AI产品，并声明本文为我原创；正文链接微信公众号文章（biz=MzI1MTUxNzgxMA==）。主页简介明确旗下产品Raphael.app、Anyvoice.net，与已验证GitHub身份匹配。核验为作者本人发布渠道，不声称平台认证徽章。",
+          "checkedAt": "2026-11-13T14:04:06.011576+00:00"
+        },
+        {
+          "platform": "B站",
+          "label": "B站·刘小排本排",
+          "url": "https://space.bilibili.com/3706947115157506",
+          "status": "verified",
+          "evidenceUrl": "https://www.bilibili.com/video/BV1ijwxzsEvD/",
+          "evidenceNote": "浏览器实际读取72条投稿的最新列表首屏和全部动态首屏。自述视频开篇我是刘小排并说明本人在十字路口播客的访谈；动态介绍本人Raphael AI产品和腾讯学堂分享。主页名称、AI编程/旗下产品千万月活简介与已读抖音本人账号一致。该同步账号最新公开动态为2026-07-10。",
+          "checkedAt": "2026-11-13T14:04:06.011576+00:00"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAppGDkfOv4NeewTd_qVV250W_EnFZNTZwcdIhC-RxNsfLtDiYu0FsEVbblF7hQahg",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/video/7616338827543711018",
+          "evidenceNote": "从本人第一人称原作页面点击作者链接，真实打开主页，读到刘小排本排、抖音号67549675977、作品21、粉丝9109；主页AI编程与旗下产品月活过千万的简介对应B站本排，自述原视频说明本人十字路口播客经历。主页归属与作品列表读取状态分开记录。",
+          "checkedAt": "2026-11-13T14:04:06.011576+00:00"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "已按刘小排、刘小排本排检索小红书个人主页，未找到能核验归属的主页；不据此判断没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "qiuzhi",
+      "name": "秋芝2046",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "微博",
+      "identity": "cross_verified",
+      "note": "公开主页名称、科技博主认证与自有域名邮箱一致；已读主页，尚未逐条深读近期视频。",
+      "url": "https://www.weibo.com/u/7892977403?tabtype=home",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/385670211",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/qiuzhi2046",
+          "evidenceNote": "本人 GitHub 资料的社交链接直接指向此 B站主页，身份已核验；目标主页直读遇 HTTP 412，不能据此判断作品无更新。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAwbbVuf1W2DdgRe0xCa0oxg1ZIHbzuiTzyjq3NcOVgBuu6qIidYlMYqbL3ZFY2swu",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/qiuzhi2046",
+          "evidenceNote": "本人 GitHub 资料的社交链接直接指向此抖音主页。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "小红书",
+          "label": "小红书",
+          "url": "https://www.xiaohongshu.com/user/profile/63b622ab00000000260066bd",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/qiuzhi2046",
+          "evidenceNote": "本人 GitHub 资料的社交链接直接指向此小红书主页。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "GitHub",
+          "label": "GitHub",
+          "url": "https://github.com/qiuzhi2046",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/qiuzhi2046",
+          "evidenceNote": "本人 GitHub 显示秋芝2046，并列出三平台账号。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        }
+      ],
+      "profileGaps": []
+    },
+    {
+      "id": "kazike",
+      "name": "数字生命卡兹克",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AI创业",
+      "entityType": "person",
+      "platform": "微信公众号",
+      "identity": "verified",
+      "note": "数字生命卡兹克本人渠道包括B站、GitHub、抖音及微信公众号；公众号关注入口由作者官网二维码核实。优先检查公众号与抖音，各平台作品读取状态分别记录。",
+      "url": null,
+      "primaryPlatforms": [
+        "微信公众号",
+        "抖音"
+      ],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/313468110",
+          "status": "verified",
+          "evidenceUrl": "https://www.bilibili.com/opus/1033611427720462352",
+          "evidenceNote": "B站本人署名文章正文可读；公开页面原生数据 author.name=数字生命卡兹克，mid=313468110，jump_url=//space.bilibili.com/313468110，与多处公开身份资料一致。主页直读 HTTP 412，身份已核验但作品列表受限。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "GitHub",
+          "label": "GitHub",
+          "url": "https://github.com/KKKKhazix",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/KKKKhazix/khazix-skills",
+          "evidenceNote": "账号自有仓库说明为数字生命卡兹克开源 AI Skills，README以作者第一人称介绍。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAwU33jOgLTqUV9Ub1h-Vgcd0VbQa-vV4lifYAzQSqgZ4",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAwU33jOgLTqUV9Ub1h-Vgcd0VbQa-vV4lifYAzQSqgZ4",
+          "evidenceNote": "浏览器实际读取本人主页：数字生命卡兹克；抖音号27040209150；希望能激发你对AI的好奇。作品367。 账号归属已核实；作品列表服务异常不影响个人主页链接，但不能作为近期列表已读。",
+          "checkedAt": "2026-11-13T14:05:17.337338+00:00"
+        },
+        {
+          "platform": "微信公众号",
+          "label": "公众号·扫码关注",
+          "url": "http://weixin.qq.com/r/mp/7jtXT8bEbJsTrYIs9278",
+          "status": "verified",
+          "evidenceUrl": "https://aihot.news/about",
+          "evidenceNote": "作者本人 AIHOT 关于页标注微信公众号“数字生命卡兹克”，官方二维码实际解码为此微信关注链接；微信号 Rockhazix 另由南方+授权转载署名交叉印证。此为公众号关注入口，需微信打开/扫码，不是文章列表；未将其改写为未经核实的 HTTPS 主页。",
+          "checkedAt": "2026-11-13T14:05:17.337338+00:00"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "blocked",
+          "note": "检索到第三方提供的候选小红书主页；直接读取没有用户资料（userPageData 为空），未能确认账号归属，暂不附链接。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "carl",
+      "name": "卡尔的AI沃茨",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AI创业",
+      "entityType": "person",
+      "platform": "抖音",
+      "identity": "cross_verified",
+      "note": "2026-11-13已由carlwow.com官方渠道栏交叉确认原抖音、微博和YouTube账号归属；作品列表读取与视频内容核验分别记录。",
+      "url": "https://www.douyin.com/user/MS4wLjABAAAAEzzpje5yWF2u-fVb77MLTlBdIgcWGKu0_WtMsyje5mStjRmOXgQ78WGY7D-ilFnT",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAEzzpje5yWF2u-fVb77MLTlBdIgcWGKu0_WtMsyje5mStjRmOXgQ78WGY7D-ilFnT",
+          "status": "verified",
+          "evidenceUrl": "https://carlwow.com/",
+          "evidenceNote": "本人官网「渠道」直接链接此抖音主页，与站点原有用户提供主页一致，现已独立跨链核验。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/1820008345",
+          "status": "verified",
+          "evidenceUrl": "https://carlwow.com/",
+          "evidenceNote": "本人官网「渠道」直接链接此 B站主页；目标直读遇 HTTP 412，但自有官网跨链可核验归属。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "小红书",
+          "label": "小红书",
+          "url": "https://www.xiaohongshu.com/user/profile/666142dc00000000070059bf",
+          "status": "verified",
+          "evidenceUrl": "https://carlwow.com/",
+          "evidenceNote": "本人官网「渠道」直接链接此小红书主页；目标读取受限不影响官网跨链身份依据。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://carlwow.com/",
+          "status": "verified",
+          "evidenceUrl": "https://carlwow.com/",
+          "evidenceNote": "官网自述卡尔的AI沃茨、AIWARTS、GoodCase，并展示平台渠道。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "GitHub",
+          "label": "GitHub",
+          "url": "https://github.com/LearnPrompt",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/LearnPrompt",
+          "evidenceNote": "GitHub 个人介绍为卡尔的AI沃茨，列出本人的平台和官网。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        },
+        {
+          "platform": "YouTube",
+          "label": "YouTube",
+          "url": "https://www.youtube.com/@aiwarts101",
+          "status": "verified",
+          "evidenceUrl": "https://carlwow.com/",
+          "evidenceNote": "本人官网渠道直接链接 YouTube @aiwarts101。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        }
+      ],
+      "profileGaps": []
+    },
+    {
+      "id": "wangziru",
+      "name": "王自如",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AI创业",
+      "entityType": "person",
+      "platform": "微博",
+      "identity": "verified",
+      "note": "本人身份已由B站原生动态与既有微博入口核实，主力发布平台为抖音。抖音精确个人主页仍待补核验，不用直播间、单条视频或搜索页替代。",
+      "url": "https://www.weibo.com/techmessager?tabtype=superTopic",
+      "primaryPlatforms": [
+        "抖音"
+      ],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/523945494",
+          "status": "verified",
+          "evidenceUrl": "https://www.bilibili.com/opus/1153918083110273041",
+          "evidenceNote": "本轮再次读取本人原生动态，页面作者为王自如AI，发布日期2026-01-04 13:51，内容讲回归半年、B站粉丝10万。先前原生HTML owner mid=523945494，已核实名单保留。该动态只用于身份验证，不属于本期更新。",
+          "checkedAt": "2026-11-13T14:03:42.971580+00:00"
+        },
+        {
+          "platform": "微博",
+          "label": "微博",
+          "url": "https://www.weibo.com/techmessager",
+          "status": "verified",
+          "evidenceUrl": "https://www.weibo.com/techmessager?tabtype=superTopic",
+          "evidenceNote": "既有来源，原生微博搜索结果显示王自如AI、ZEALER创始人及AI领域内容，保留原入口。",
+          "checkedAt": "2026-11-13T13:36:21.621802Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "blocked",
+          "note": "本人主力平台为抖音；本轮正常浏览器用户搜索进入验证码中间页，正常重载后仍阻塞，未继续探测。仍未取得可靠个人 user 主页，不能用直播间 699595952、单条视频或搜索页替代。此为待补核验，不代表没有账号或没有发布。",
+          "checkedAt": "2026-11-13T14:03:42.971580+00:00"
+        },
+        {
+          "platform": "小红书",
+          "status": "unverified",
+          "note": "公开报道及内容搜索显示王自如AI在小红书发过内容，但尚未核到精确本人主页，不附猜测链接。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "director",
+      "name": "人类最强编导",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "国内视频",
+      "identity": "unverified",
+      "note": "保留关注名单；尚未确认唯一的原作者主页。",
+      "url": null,
+      "primaryPlatforms": [],
+      "profiles": [],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "unverified",
+          "note": "抖音官方作品页可检索到“人类最强编导（10月上海线下课”及作者回复，但尚未取得可核实的作者主页地址；不以作品页代替主页。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "B站",
+          "status": "not_found",
+          "note": "已按姓名及平台检索，未找到能核实为本人且有明确 UID 的 B 站主页；不代表确认其没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "已检索小红书账号，未找到可核实的本人主页；不附同名或搜索页。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "ksr",
+      "name": "Ksr桑",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "B站",
+      "identity": "verified",
+      "note": "Ksr桑的B站与抖音个人账号均已核实；以B站和抖音为主力检查平台。每个平台的发布时间、作品列表覆盖与内容证据分别记录。",
+      "url": "https://space.bilibili.com/1848018",
+      "primaryPlatforms": [
+        "B站",
+        "抖音"
+      ],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/1848018",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV12oWi6VEzP",
+          "evidenceNote": "本轮实际打开作者最新发布列表并进入新视频《新人入坑必看！原来AI视频还能这样做？》；B站官方公开 API owner.mid=1848018、owner.name=Ksr桑，再次确认本人账号。作品内容读取范围另记，不以身份核验替代整片阅读。",
+          "checkedAt": "2026-11-13T14:10:00.294506+00:00"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAHh0RHAYS48V5XTWWRRKDqFZB8n8L4PcFoN6r9jmt3tMj-wN1i2z9QgEz2Dm1bqGY",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAHh0RHAYS48V5XTWWRRKDqFZB8n8L4PcFoN6r9jmt3tMj-wN1i2z9QgEz2Dm1bqGY",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称 Ksr桑、抖音号 2228367694，简介 Tapnow star creator / 阿斯塔纳国际电影节，与既有 AI 视频作者身份对应。作品列表显示服务异常，本次只确认主页归属。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "已按 Ksr桑、KSR桑及小红书检索，未取得可核实的本人主页。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "xiaojun",
+      "name": "张小珺",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "认知与方法",
+      "entityType": "person",
+      "platform": "小宇宙",
+      "identity": "verified",
+      "note": "官方公开入口已找到，后续逐期核验更新。",
+      "url": "https://www.xiaoyuzhoufm.com/podcast/626b46ea9cbbf0451cf5a962",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/280780745",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1KZ8X6uEPL",
+          "evidenceNote": "B 站官方公开视频 API 对 BV1KZ8X6uEPL、BV1nB3u6tERu 均返回 code=0，owner.mid=280780745、owner.name=张小珺商业访谈录；节目及作者名一致。",
+          "checkedAt": "2026-11-13T13:36:52.518074Z"
+        },
+        {
+          "platform": "小红书",
+          "label": "小红书",
+          "url": "https://www.xiaohongshu.com/user/profile/5fede947000000000100603e",
+          "status": "verified",
+          "evidenceUrl": "https://www.xiaoyuzhoufm.com/episode/65097ffa5c88d241264b39cb",
+          "evidenceNote": "本人小宇宙《张小珺Jùn｜商业访谈录》第39期 Show Notes 的“联络我们：小红书@张小珺jùn”直接链接此用户 ID。身份由本人节目说明跨链核实；小红书主页本次跳转 rednote 后读取失败，未声称读完作品。",
+          "checkedAt": "2026-11-13T13:36:52.518074Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "unverified",
+          "note": "官方抖音精选作品能确认“张小珺”发布商业访谈录，但尚未取得可核实的个人主页精确地址，暂不附链接。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "lightfeather",
+      "name": "光羽的平行世界",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "国内视频",
+      "identity": "unverified",
+      "note": "保留关注名单；尚未确认唯一的原作者主页。",
+      "url": null,
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/3546571130014396",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1oE9QBzE38",
+          "evidenceNote": "B 站官方 API 对站内已存 BV1oE9QBzE38、BV1bshg6REmV 及另查 BV1sqVA6QEQ5 均返回 owner.mid=3546571130014396、owner.name=光羽的平行世界；节目主题和账号简介均一致。",
+          "checkedAt": "2026-11-13T13:36:52.518074Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "unverified",
+          "note": "官方抖音精选作品与第三方资料有同名作者及一致简介，但未取得可核实的精确个人主页，暂不附链接。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "已按全名及小红书检索，未取得可核实的本人主页。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "befun",
+      "name": "北方Befun",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "抖音",
+      "identity": "user_provided",
+      "note": "用户指定主页；内容读取和账号身份需分别核验。",
+      "url": "https://www.douyin.com/user/MS4wLjABAAAAV8HHWgS_rk8QdqAtGbZii0QmxvZ5n35cLqbgVUiCnPLP6hZGsMN6GoLS2Xum_DfJ",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/370309928",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1gx5C6LE2e",
+          "evidenceNote": "B 站官方 API 对本站已存 BV1gx5C6LE2e 与另查 BV1WCDgBhEtj 均返回 code=0，owner.mid=370309928、owner.name=北方Befun。作品页简介写“全网同名 AI/调色/剪辑/拍摄/直播电商”，与关注来源一致。",
+          "checkedAt": "2026-11-13T13:36:52.518074Z"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAV8HHWgS_rk8QdqAtGbZii0QmxvZ5n35cLqbgVUiCnPLP6hZGsMN6GoLS2Xum_DfJ",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAV8HHWgS_rk8QdqAtGbZii0QmxvZ5n35cLqbgVUiCnPLP6hZGsMN6GoLS2Xum_DfJ",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称北方Befun、抖音号 Befun0801，摄影简介“不要轻易按下你的快门”，与用户给定主页及已核实 B站作者一致。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "已按北方Befun、北方 Befun及小红书检索，未取得可核实的本人主页。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "tzfilm",
+      "name": "柱子哥TzFilm",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "抖音",
+      "identity": "user_provided",
+      "note": "用户指定主页；内容读取和账号身份需分别核验。",
+      "url": "https://www.douyin.com/user/MS4wLjABAAAAjN32ZoC90W_FXxpeck2ATV5PCQcnnHM2cSzm8SHdcGCEC3P_fxGweCSTutk3Mvqq",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/286782094",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1JERDByEox",
+          "evidenceNote": "原作《中文区最强的Ai信源搜集Skill，我爆款视频的选题全靠它》owner 为柱子哥TzFilm；搜索可读作品署名与其 AI/商业/全平台同名简介一致。 已用无凭据的 B站公开作品 metadata 读取 owner.mid/name；主页网页读取 412、账号 card 接口 -352，故该结论只核验入口归属，不表示已读最新作品列表。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAjN32ZoC90W_FXxpeck2ATV5PCQcnnHM2cSzm8SHdcGCEC3P_fxGweCSTutk3Mvqq",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAjN32ZoC90W_FXxpeck2ATV5PCQcnnHM2cSzm8SHdcGCEC3P_fxGweCSTutk3Mvqq",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称柱子哥TzFilm、抖音号 21397448654，简介“AI / 全球视野 / 科技数码 / 案例分析”，与用户给定主页及已核实 B站作者一致。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "按柱子哥TzFilm、柱子哥及平台限定检索，未取得可归属个人主页；不附搜索页/同名账号，不能据此认定没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "hezhiwei",
+      "name": "何止维",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "抖音",
+      "identity": "user_provided",
+      "note": "用户指定主页；内容读取和账号身份需分别核验。",
+      "url": "https://www.douyin.com/user/MS4wLjABAAAAPuQaa3eXvmpZmVS0FGKpbQoqYQMhz4C6xMMQopkru5zonpkCXZ0b2wBtiwni957c",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/3690993433971022",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1VKPTzTEQ4",
+          "evidenceNote": "原作《爆肝三天！我用AI做了一个电影感EVA短片》owner 为何止维，原作索引简介为前广告导演、探索AIGC；与本站作者身份和已有原作入口一致。 已用无凭据的 B站公开作品 metadata 读取 owner.mid/name；主页网页读取 412、账号 card 接口 -352，故该结论只核验入口归属，不表示已读最新作品列表。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAPuQaa3eXvmpZmVS0FGKpbQoqYQMhz4C6xMMQopkru5zonpkCXZ0b2wBtiwni957c",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAPuQaa3eXvmpZmVS0FGKpbQoqYQMhz4C6xMMQopkru5zonpkCXZ0b2wBtiwni957c",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称何止维、抖音号 50218705971，简介“8年广告导演”，与用户给定主页及已核实 B站导演身份一致。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "何止维及小红书平台限定检索未找到可核验个人主页；不附同名候选，不能据此认定没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "workfisher",
+      "name": "Work-Fisher",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "超级个体",
+      "entityType": "person",
+      "platform": "B站",
+      "identity": "cross_verified",
+      "note": "本人GitHub直接链接此B站账号，作品页全平台统一IP说明相符；近期内容尚未逐条深读。",
+      "url": "https://space.bilibili.com/17919458",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/17919458",
+          "status": "verified",
+          "evidenceUrl": "https://work-fisher.com/",
+          "evidenceNote": "本人官网导航和页脚直接链接 B站 UID 17919458；原有本站身份为 cross_verified，本轮官网复核通过。B站主页直接读取 412，不等于无更新。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://work-fisher.com/",
+          "status": "verified",
+          "evidenceUrl": "https://work-fisher.com/",
+          "evidenceNote": "页面标题 WorkFisher，展示其 AI 工作流、开源项目，并链接其 B站、YouTube、GitHub。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "YouTube",
+          "label": "YouTube",
+          "url": "https://www.youtube.com/@Work-Fisher",
+          "status": "verified",
+          "evidenceUrl": "https://work-fisher.com/",
+          "evidenceNote": "本人官网导航和页脚的 YouTube 直接链接；频道内容本轮受 throttled 限制，未声明最新列表已读。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "GitHub",
+          "label": "GitHub",
+          "url": "https://github.com/Work-Fisher",
+          "status": "verified",
+          "evidenceUrl": "https://work-fisher.com/",
+          "evidenceNote": "本人官网页脚直接链接 GitHub/Work-Fisher，且正文所列 ComfyUI-Fisher-Pose 等项目亦属于该账号。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "not_found",
+          "note": "检索得到其他作者提及 Work-Fisher 工作流的抖音作品，未找到可核验本人抖音主页；不把他人引用当本人账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "小红书及本人名称组合检索、官网跨链检查未找到可核验个人主页。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "dankoe",
+      "name": "Dan Koe",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "超级个体",
+      "entityType": "person",
+      "platform": "官网 / 抖音",
+      "identity": "verified",
+      "note": "优先 Dan Koe 官网原作；同名抖音账号是否本人尚未核验。",
+      "url": "https://thedankoe.com/",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://thedankoe.com/",
+          "status": "verified",
+          "evidenceUrl": "https://thedankoe.com/",
+          "evidenceNote": "已读取本人官网。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "Newsletter",
+          "label": "Newsletter",
+          "url": "https://letters.thedankoe.com/",
+          "status": "verified",
+          "evidenceUrl": "https://thedankoe.com/",
+          "evidenceNote": "本人官网直接链接到 Newsletter。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://twitter.com/thedankoe",
+          "status": "verified",
+          "evidenceUrl": "https://thedankoe.com/",
+          "evidenceNote": "本人官网 HTML 的社媒 href 直接指向此账号。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "unverified",
+          "note": "原有同名抖音线索缺少本人官网反向链接或认证依据，本站原记录也明确标注本人身份未核实，本轮不附该链接。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "B站",
+          "status": "not_found",
+          "note": "已检索，未找到本人官网或可信认证证据对应的 B站主页，搜索结果含中文翻译搬运，不能视为本人账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "已检索，未找到本人官网或可信认证证据对应的小红书主页，中文同名及翻译内容不能证明账号归属。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "guizang",
+      "name": "歸藏",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "person",
+      "platform": "GitHub / 抖音",
+      "identity": "verified",
+      "note": "官方公开入口已找到，后续逐期核验更新。",
+      "url": "https://github.com/op7418",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/1741797",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1yx5Z6rEqo",
+          "evidenceNote": "《Guizang PPT Skill + Codex+ HyperFrames！》owner 为歸藏的AI工具箱，视频简介直接指向 github.com/op7418/guizang-ppt-skill；本人 GitHub 和官网同样使用 op7418 与歸藏身份。 已用无凭据的 B站公开作品 metadata 读取 owner.mid/name；主页网页读取 412、账号 card 接口 -352，故该结论只核验入口归属，不表示已读最新作品列表。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "GitHub",
+          "label": "GitHub",
+          "url": "https://github.com/op7418",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/op7418",
+          "evidenceNote": "GitHub 主页本人标注歸藏 op7418、AI工具与开源创作者，并链接其 X；本轮页面可读。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://x.com/op7418",
+          "status": "verified",
+          "evidenceUrl": "https://github.com/op7418",
+          "evidenceNote": "本人 GitHub 主页与 www.guizang.ai 官网均直接链接 twitter.com/op7418；X 个人入口使用同一 handle。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://www.guizang.ai/",
+          "status": "verified",
+          "evidenceUrl": "https://www.guizang.ai/",
+          "evidenceNote": "站点歸藏内容与 GitHub op7418、X op7418 直接互证；本轮可读。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAA0ZMxKodgckhSdf_7KczekIydqVMg2pWKTFKpML598Zw",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAA0ZMxKodgckhSdf_7KczekIydqVMg2pWKTFKpML598Zw",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称歸藏、抖音号 23188777，简介关注人工智能、LLM、AI 图像视频和设计，与用户给定主页及本人其他主页一致。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "unverified",
+          "note": "搜索有本人提及小红书发布的线索，但没有取得可验证的小红书 profile ID 或官方跨链；不附猜测链接。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "luoyonghao",
+      "name": "罗永浩的十字路口",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "认知与方法",
+      "entityType": "creator-channel",
+      "platform": "小宇宙 / 抖音",
+      "identity": "verified",
+      "note": "官方公开入口已找到，后续逐期核验更新。",
+      "url": "https://www.xiaoyuzhoufm.com/podcast/68981df29e7bcd326eb91d88",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "小宇宙",
+          "label": "小宇宙",
+          "url": "https://www.xiaoyuzhoufm.com/podcast/68981df29e7bcd326eb91d88",
+          "status": "verified",
+          "evidenceUrl": "https://www.xiaoyuzhoufm.com/episode/6aea8204c96c8942ec16ee88",
+          "evidenceNote": "官方节目单集归属于该播客主页。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAdYnizw-yHaCBKEeZugZp-kWwLCjvB8GW-iR0I3BdxmkdyKxQkCODEKwzMTvYQgB0",
+          "status": "verified",
+          "evidenceUrl": "https://www.xiaoyuzhoufm.com/episode/6aea8204c96c8942ec16ee88",
+          "evidenceNote": "官方节目单集“了解更多”直接链接到此抖音主页，与用户原有链接一致。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/538596213",
+          "status": "verified",
+          "evidenceUrl": "https://www.xiaoyuzhoufm.com/episode/6aea8204c96c8942ec16ee88",
+          "evidenceNote": "官方节目单集“了解更多”直接链接到此 B站主页；原站主页抓取返回 412，归属由官方跨链确认。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "小红书",
+          "label": "小红书",
+          "url": "https://www.xiaohongshu.com/user/profile/630fb094000000001200c9f8",
+          "status": "verified",
+          "evidenceUrl": "https://www.xiaoyuzhoufm.com/episode/6aea8204c96c8942ec16ee88",
+          "evidenceNote": "官方节目单集“了解更多”直接链接到此小红书主页，已移除分享跟踪与临时 token。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        }
+      ],
+      "profileGaps": []
+    },
+    {
+      "id": "sv101",
+      "name": "硅谷101陈茜",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "认知与方法",
+      "entityType": "creator-channel",
+      "platform": "播客 / 抖音",
+      "identity": "verified",
+      "note": "官方公开入口已找到，后续逐期核验更新。",
+      "url": "https://sv101.fireside.fm/",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "官网",
+          "label": "节目官网",
+          "url": "https://sv101.fireside.fm/",
+          "status": "verified",
+          "evidenceUrl": "https://sv101.fireside.fm/",
+          "evidenceNote": "现有官方节目主页，已读取。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/508452265",
+          "status": "verified",
+          "evidenceUrl": "https://sv101.fireside.fm/211",
+          "evidenceNote": "节目官方 E201 页面“视频版”直接链接到该 B站主页；官方 RSS 也含同一地址。主页自身读取返回 412。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "小红书",
+          "label": "小红书",
+          "url": "https://www.xiaohongshu.com/user/profile/5f3d230f000000000100acf8",
+          "status": "verified",
+          "evidenceUrl": "https://sv101.fireside.fm/228",
+          "evidenceNote": "节目官方 E218 页面明确写“小红书关注硅谷101”并直接链接到此主页；已移除临时 token。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "YouTube",
+          "label": "YouTube",
+          "url": "https://www.youtube.com/@TheValley101",
+          "status": "verified",
+          "evidenceUrl": "https://sv101.fireside.fm/211",
+          "evidenceNote": "节目官方 E201 页面“视频版”直接链接到该 YouTube 频道。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAe-hAJmfhgoauAnPMn7xIKixL6QX22o-WF3jYVX1Mztg",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAe-hAJmfhgoauAnPMn7xIKixL6QX22o-WF3jYVX1Mztg",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称硅谷101陈茜、抖音号 Thevalley_Qian，简介商业财经、前沿科技、创业访谈及硅谷101联合创作者，与节目官网对应。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": []
+    },
+    {
+      "id": "mediastorm",
+      "name": "影视飓风",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "creator-channel",
+      "platform": "抖音",
+      "identity": "user_provided",
+      "note": "用户指定主页；内容读取和账号身份需分别核验。",
+      "url": "https://www.douyin.com/user/MS4wLjABAAAAaCcBHb3Rhc4zxF8YkBOfHfLh6k-IWEK2l3Ne9xOXPnQ",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "B站",
+          "label": "B站",
+          "url": "https://space.bilibili.com/946974",
+          "status": "verified",
+          "evidenceUrl": "https://api.bilibili.com/x/web-interface/view?bvid=BV1Vys2zKEm1",
+          "evidenceNote": "原作《动态视频｜影视飓风正式入驻天猫啦！》owner 为影视飓风 UID 946974，和本站已有官方入口一致；原作索引简介带 ysjf.com 商务联系域名。 已用无凭据的 B站公开作品 metadata 读取 owner.mid/name；主页网页读取 412、账号 card 接口 -352，故该结论只核验入口归属，不表示已读最新作品列表。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://www.ysjf.com/index",
+          "status": "verified",
+          "evidenceUrl": "https://www.bilibili.com/video/BV1Vys2zKEm1/",
+          "evidenceNote": "B站原作品作者简介域名 ysjf.com 与站点已有官网一致；本轮官网仅返回动态加载壳，未据此宣称已读其最新内容。",
+          "checkedAt": "2026-11-13T13:36:49.936308+00:00"
+        },
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAaCcBHb3Rhc4zxF8YkBOfHfLh6k-IWEK2l3Ne9xOXPnQ",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAaCcBHb3Rhc4zxF8YkBOfHfLh6k-IWEK2l3Ne9xOXPnQ",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称影视飓风、抖音号 superslow，简介“无限进步”，与用户给定主页及 B站主创频道一致。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "小红书",
+          "status": "unverified",
+          "note": "第三方索引显示影视飓风小红书号 550242123，但未找到经一手验证的实际 user/profile 地址；另有飓风商店账号，不能混为主创账号。未附任何猜测地址。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "jianghu",
+      "name": "姜胡说",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "认知与方法",
+      "entityType": "person",
+      "platform": "抖音",
+      "identity": "user_provided",
+      "note": "用户指定主页；内容读取和账号身份需分别核验。",
+      "url": "https://www.douyin.com/user/MS4wLjABAAAAxaSHyjKQyfWHKjIS1mYbpxxEQZpT8ogl_eyks2M_Twc",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "抖音",
+          "label": "抖音",
+          "url": "https://www.douyin.com/user/MS4wLjABAAAAxaSHyjKQyfWHKjIS1mYbpxxEQZpT8ogl_eyks2M_Twc",
+          "status": "verified",
+          "evidenceUrl": "https://www.douyin.com/user/MS4wLjABAAAAxaSHyjKQyfWHKjIS1mYbpxxEQZpT8ogl_eyks2M_Twc",
+          "evidenceNote": "浏览器实际打开个人主页核对：名称姜胡说、抖音号 jianghushuo，主页显示财经自媒体认证，与用户给定主页身份一致。 此处核验的是账号归属，不代表已完整读取最新作品。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "B站",
+          "status": "unverified",
+          "note": "检索出现姜胡说商业思维、姜胡说孙手筋与直播录屏粉丝号；没有本人跨链或足够归属证据，不附这些候选。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "按姓名与平台限定检索，未找到可核验个人主页；不以搜索页/同名号代替，也不能据此认定没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "latent",
+      "name": "Latent Space",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AI创业",
+      "entityType": "creator-channel",
+      "platform": "播客 / YouTube",
+      "identity": "verified",
+      "note": "官方公开入口已找到，后续逐期核验更新。",
+      "url": "https://latent.space/",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://latent.space/",
+          "status": "verified",
+          "evidenceUrl": "https://latent.space/about/",
+          "evidenceNote": "官方 about 页面确认节目与出版物身份。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "YouTube",
+          "label": "YouTube",
+          "url": "https://www.youtube.com/@LatentSpacePod",
+          "status": "verified",
+          "evidenceUrl": "https://latent.space/about/",
+          "evidenceNote": "官方 about 页面直接链接到此频道。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://x.com/latentspacepod",
+          "status": "verified",
+          "evidenceUrl": "https://latent.space/about/",
+          "evidenceNote": "官方 about 页面 HTML 直接链接到此账号。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "not_found",
+          "note": "本轮已检索Latent Space在抖音、B站、小红书的主页，并检查官网社媒反向链接，未找到可验证归属的douyin主页；不等于确认没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "B站",
+          "status": "not_found",
+          "note": "本轮已检索Latent Space在抖音、B站、小红书的主页，并检查官网社媒反向链接，未找到可验证归属的bilibili主页；不等于确认没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "本轮已检索Latent Space在抖音、B站、小红书的主页，并检查官网社媒反向链接，未找到可验证归属的xiaohongshu主页；不等于确认没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "openai-x",
+      "name": "OpenAI",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "organization",
+      "platform": "X",
+      "identity": "verified",
+      "note": "用户明确保留的官方 X 来源；账号归属由官方站点的社媒链接核验。每日读取近期原帖，登录或读取限制如实记录。",
+      "url": "https://x.com/OpenAI",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://x.com/OpenAI",
+          "status": "verified",
+          "evidenceUrl": "https://openai.com/",
+          "evidenceNote": "OpenAI 官网页脚直接链接；curl 核对 href；搜索工具点击 X 返回 403，不影响官网反向链接确认归属。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        }
+      ],
+      "profileGaps": []
+    },
+    {
+      "id": "claude-x",
+      "name": "Claude",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "organization",
+      "platform": "X",
+      "identity": "verified",
+      "note": "用户明确保留的官方 X 来源；账号归属由官方站点的社媒链接核验。每日读取近期原帖，登录或读取限制如实记录。",
+      "url": "https://x.com/claudeai",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://x.com/claudeai",
+          "status": "verified",
+          "evidenceUrl": "https://claude.com/",
+          "evidenceNote": "Claude 官网 HTML 的社媒 href 直接指向 https://x.com/claudeai，已用 curl 读取核对；不是 AnthropicAI 公司账号。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        }
+      ],
+      "profileGaps": []
+    },
+    {
+      "id": "greg",
+      "name": "Greg Isenberg",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "超级个体",
+      "entityType": "person",
+      "platform": "博客 / YouTube",
+      "identity": "verified",
+      "note": "官方公开入口已找到，后续逐期核验更新。",
+      "url": "https://www.gregisenberg.com/blog",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "官网",
+          "label": "官网",
+          "url": "https://www.gregisenberg.com/blog",
+          "status": "verified",
+          "evidenceUrl": "https://www.gregisenberg.com/",
+          "evidenceNote": "本人官网博客入口。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "YouTube",
+          "label": "YouTube",
+          "url": "https://www.youtube.com/@GregIsenberg",
+          "status": "verified",
+          "evidenceUrl": "https://www.gregisenberg.com/",
+          "evidenceNote": "官网 Find and follow me 直接链接到此频道。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        },
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://twitter.com/gregisenberg",
+          "status": "verified",
+          "evidenceUrl": "https://www.gregisenberg.com/",
+          "evidenceNote": "官网 Find and follow me 直接链接到此账号。",
+          "checkedAt": "2026-11-13T13:37:22.931603Z"
+        }
+      ],
+      "profileGaps": [
+        {
+          "platform": "抖音",
+          "status": "not_found",
+          "note": "本轮已检索Greg Isenberg在抖音、B站、小红书的主页，并检查官网社媒反向链接，未找到可验证归属的douyin主页；不等于确认没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "B站",
+          "status": "not_found",
+          "note": "本轮已检索Greg Isenberg在抖音、B站、小红书的主页，并检查官网社媒反向链接，未找到可验证归属的bilibili主页；不等于确认没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "小红书",
+          "status": "not_found",
+          "note": "本轮已检索Greg Isenberg在抖音、B站、小红书的主页，并检查官网社媒反向链接，未找到可验证归属的xiaohongshu主页；不等于确认没有账号。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ]
+    },
+    {
+      "id": "higgsfield",
+      "name": "Higgsfield",
+      "enabled": true,
+      "directoryStatus": "active",
+      "category": "AIGC创作",
+      "entityType": "organization",
+      "platform": "官方博客 / 产品更新",
+      "identity": "verified",
+      "note": "用户指定新增；优先检查官方产品更新、电影制作与视频工作流内容。",
+      "url": "https://higgsfield.ai/blog",
+      "primaryPlatforms": [],
+      "profiles": [
+        {
+          "platform": "官网",
+          "label": "官方博客",
+          "url": "https://higgsfield.ai/blog",
+          "status": "verified",
+          "evidenceUrl": "https://higgsfield.ai/",
+          "evidenceNote": "官网 Resources 直接链接官方 Blog，已打开博客索引。保留用户指定的视频制作与产品更新来源。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "X",
+          "label": "X",
+          "url": "https://x.com/higgsfield",
+          "status": "verified",
+          "evidenceUrl": "https://higgsfield.ai/",
+          "evidenceNote": "Higgsfield 官网页脚 X / Twitter 直接链接此账号；本次 X 直读返回 403，账号归属有官方依据，原帖内容读取仍受限。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        },
+        {
+          "platform": "YouTube",
+          "label": "YouTube",
+          "url": "https://www.youtube.com/@HiggsfieldAI",
+          "status": "verified",
+          "evidenceUrl": "https://higgsfield.ai/",
+          "evidenceNote": "Higgsfield 官网页脚直接链接此频道；本次只取得频道基本页面，未读取具体视频。",
+          "checkedAt": "2026-11-13T13:46:08.761426Z"
+        }
+      ],
+      "profileGaps": []
+    }
+  ]
+}

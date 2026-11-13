@@ -1,0 +1,4 @@
+# 用 crontab -e 加入（机器时区需为 Asia/Shanghai）
+# 只有 10:00 那一轮做全量覆盖，其余轮次默认最多 8 个目标。
+0 8,12,14,16,18,20,22 * * * cd /Users/CHANGE_ME/dafeige-radar-collector && /usr/bin/env node src/cli.mjs run >> logs/run.log 2>&1
+0 10 * * *               cd /Users/CHANGE_ME/dafeige-radar-collector && /usr/bin/env node src/cli.mjs run --cap 100 >> logs/run.log 2>&1

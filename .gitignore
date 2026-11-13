@@ -1,0 +1,15 @@
+# runtime state and collected evidence are never committed
+state/
+evidence/*
+!evidence/.gitkeep
+
+# local secrets
+.env
+.env.local
+*.pem
+*.key
+
+# OS noise
+.DS_Store
+node_modules/
+npm-debug.log*

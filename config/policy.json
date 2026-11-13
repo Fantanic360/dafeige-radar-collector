@@ -1,0 +1,54 @@
+{
+  "version": "2026-11-14.1",
+  "timezone": "Asia/Shanghai",
+  "schedule": {
+    "editionHour": 10,
+    "editionToleranceMinutes": 45,
+    "rounds": [
+      "08:00",
+      "10:00",
+      "12:00",
+      "14:00",
+      "16:00",
+      "18:00",
+      "20:00",
+      "22:00"
+    ],
+    "note": "沿用现有单一 Automation 的时段；只有 10:00 轮做全作者覆盖并生成一次语音。"
+  },
+  "budget": {
+    "offEditionCap": 8,
+    "editionCap": 100,
+    "contentCap": 4,
+    "runBudgetMs": 1500000,
+    "perTargetTimeoutMs": 120000,
+    "note": "非 10 点最多 8 个目标；按 22 分钟单轮预算控制，超时保留进度并正常退出。"
+  },
+  "backoff": {
+    "hours": [
+      2,
+      4,
+      8,
+      16,
+      24
+    ],
+    "successReDueHours": 4,
+    "note": "失败按 2/4/8/16/24 小时退避；成功 4 小时后再到期；失败不推进成功游标。"
+  },
+  "window": {
+    "initialDays": 7,
+    "maxPages": 4,
+    "maxItemsPerTarget": 12,
+    "note": "首次补 7 天缺口；之后从上次成功窗口续接。"
+  },
+  "lease": {
+    "ttlMs": 600000,
+    "heartbeatMs": 30000,
+    "note": "单目标租约 10 分钟，心跳 30 秒；进程被杀后租约自动过期可被接管。"
+  },
+  "guards": {
+    "maxConsecutiveFailures": 5,
+    "hostCooldownMs": 300000,
+    "note": "同一主机连续失败 5 次熔断 5 分钟，避免单平台拖垮整轮。"
+  }
+}

@@ -1,0 +1,14 @@
+# /etc/systemd/system/dafeige-collector@.service
+# 用 dafeige-collector@<repo-path-escaped>.service 调用；WorkingDirectory 指向仓库。
+[Unit]
+Description=Dafeige radar collector round
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%f
+ExecStart=/usr/bin/env node src/cli.mjs run
+Environment=RADAR_LOG_LEVEL=info
+TimeoutStartSec=1800
+Nice=10

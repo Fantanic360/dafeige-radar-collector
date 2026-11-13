@@ -1,0 +1,10 @@
+[Unit]
+Description=Run radar collector at 08/10/12/14/16/18/20/22 Beijing time
+
+[Timer]
+OnCalendar=*-*-* 08,10,12,14,16,18,20,22:00:00
+Persistent=true
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
