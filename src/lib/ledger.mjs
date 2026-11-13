@@ -32,6 +32,7 @@ export class RunLedger {
         newPosts: 0,
         contentVerified: 0,
         contentBlocked: 0,
+        skippedByBreaker: 0,
         pushed: 0,
         pushFailed: 0,
       },

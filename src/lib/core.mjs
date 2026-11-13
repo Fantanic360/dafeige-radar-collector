@@ -118,13 +118,24 @@ export function createLogger({ level = 'info', sink = process.stderr, json = fal
       sink.write(`${entry.ts.slice(11, 19)} ${lvl.toUpperCase().padEnd(5)} ${msg}${extras ? ` ${extras}` : ''}\n`);
     }
   };
-  return {
+  const logger = {
     debug: (m, f) => emit('debug', m, f),
     info: (m, f) => emit('info', m, f),
     warn: (m, f) => emit('warn', m, f),
     error: (m, f) => emit('error', m, f),
-    child: (base) => createLogger({ level, sink, json }).withBase?.(base) || createLogger({ level, sink, json }),
   };
+  /** Prefix every message with a scope, e.g. `log.child('push')`. */
+  logger.child = (scope) => {
+    const wrap = (fn) => (m, f) => fn(`[${scope}] ${m}`, f);
+    return {
+      debug: wrap(logger.debug),
+      info: wrap(logger.info),
+      warn: wrap(logger.warn),
+      error: wrap(logger.error),
+      child: logger.child,
+    };
+  };
+  return logger;
 }
 
 /** Write JSON atomically: tmp file in the same dir, fsync, rename. */

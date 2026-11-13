@@ -315,7 +315,6 @@ export class Runner {
       const hostFailures = new Map();
 
       for (const [idx, target] of plan.selected.entries()) {
-        this.log?.info(`开始目标 ${idx + 1}/${plan.selected.length}`, { target: `${target.sourceId}/${target.platform}`, adapter: resolveAdapter(target).adapter?.name });
         if (this.aborted) {
           this.log?.warn('收到中断信号，保留已完成进度');
           break;
@@ -342,10 +341,12 @@ export class Runner {
           };
           observations.push(obs);
           this.store.applyObservation(obs);
+          ledger.count('skippedByBreaker');
           ledger.event('target.host-breaker', { targetId: target.id, host });
           continue;
         }
 
+        this.log?.info(`开始目标 ${idx + 1}/${plan.selected.length}`, { target: `${target.sourceId}/${target.platform}`, adapter: resolveAdapter(target).adapter?.name });
         const startedAt = Date.now();
         const outcome = await this.runTarget(target, states, { runId, evidenceDir });
         if (outcome.skipped) {
