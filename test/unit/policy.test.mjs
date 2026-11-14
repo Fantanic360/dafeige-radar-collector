@@ -50,6 +50,31 @@ test('failure backs off and NEVER moves the success cursor', () => {
   assert.equal(new Date(second.nextDueAt).getTime() - new Date(base).getTime(), 4 * HOUR);
 });
 
+test('the same failure cause three times escalates to blocked instead of retrying forever', () => {
+  let state = {};
+  for (let i = 1; i <= 3; i += 1) {
+    state = reduceTargetState(state, {
+      status: 'retry',
+      checkedAt: base,
+      note: '作品区服务异常',
+      failureCode: 'EMPTY_LIST',
+    });
+    if (i < 3) assert.equal(state.status, 'retry', `第 ${i} 次仍应是 retry`);
+  }
+  assert.equal(state.status, 'blocked');
+  assert.equal(state.needsAttention, true);
+  assert.equal(state.nextDueAt, null);
+  assert.equal(state.escalatedFrom, 'retry');
+  assert.equal(state.lastSuccessfulAt, undefined, '升级为 blocked 也不能伪造成功');
+});
+
+test('a different cause resets the escalation streak', () => {
+  const first = reduceTargetState({}, { status: 'retry', checkedAt: base, note: 'a', failureCode: 'TIMEOUT' });
+  const second = reduceTargetState(first, { status: 'retry', checkedAt: base, note: 'b', failureCode: 'EMPTY_LIST' });
+  const third = reduceTargetState(second, { status: 'retry', checkedAt: base, note: 'c', failureCode: 'EMPTY_LIST' });
+  assert.equal(third.status, 'retry', '原因不连续就不该升级');
+});
+
 test('blocked leaves the auto queue and raises needsAttention', () => {
   const next = reduceTargetState({ failCount: 2 }, { status: 'blocked', checkedAt: base, note: 'login wall' });
   assert.equal(next.status, 'blocked');

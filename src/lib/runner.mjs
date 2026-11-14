@@ -448,6 +448,7 @@ export class Runner {
           status: result.status,
           note: result.note,
           evidenceUrl: result.evidenceUrl,
+          failureCode: result.failure?.code || null,
           cursor: result.cursor || undefined,
           adapter: outcome.adapter,
           pagesRead: result.pagesRead,

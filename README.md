@@ -38,9 +38,16 @@ node src/cli.mjs plan          # 只看这一轮会做什么（不动手）
 node src/cli.mjs run --dry-run # 真读平台，但不写生产
 node src/cli.mjs run           # 采一轮并按配置推送
 node src/cli.mjs verify        # 回读公开镜像，核对检查时间与作品
+node src/cli.mjs audit         # 体检公开快照：积压、容量赤字、日期/目录/语音/泄漏
 ```
 
-常用参数：`--only ksr,kazike`（限定来源）、`--force`（忽略未到期，仍不自动重试 blocked）、`--cap 8`（补采上限）、`--dry-run`、`--scheduled-for 2026-11-14T10:00:00+08:00`（调度器提供的原计划时刻）。缺少原计划时刻时按补采处理；延迟启动不能用当前钟点冒充原计划轮次。
+`audit` 是给「跑了一周之后到底有没有烂」准备的：它把 `collection.states` 的新鲜度、
+按现有节奏能不能维持 4 小时重到期、同因失败是否陷入重试循环、以及已移除来源是否还在
+产文，全部算成 P0/P1/P2 结论，有 P0/P1 时退出码为 1，可以直接挂到定时检查上。
+
+常用参数：`--only ksr,kazike`（限定来源）、`--force`（忽略未到期，仍不自动重试 blocked）、
+`--cap 8`（补采上限）、`--dry-run`、`--scheduled-for 2026-11-14T10:00:00+08:00`
+（调度器提供的原计划时刻）。缺少原计划时刻时按补采处理；延迟启动不能用当前钟点冒充原计划轮次。
 
 无凭据时默认是**只读镜像模式**：从公开 `/api/data` 取队列快照，产出的 `payload.json` / `result.json` 直接交给维护者合并。配置 `RADAR_EDITORIAL_BASE` + `RADAR_EDITORIAL_TOKEN` 后自动切到**采编写入模式**。
 

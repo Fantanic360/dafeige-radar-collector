@@ -10,6 +10,7 @@ node src/cli.mjs plan                   # 看这一轮打算做什么
 node src/cli.mjs run                    # 跑一轮
 node src/cli.mjs verify                 # 推送后回读公开镜像
 node src/cli.mjs history --limit 5      # 最近几轮的账本
+node src/cli.mjs audit                  # 体检公开快照（有 P0/P1 时退出码 1）
 node --test test/unit/*.test.mjs        # 32 秒内确认逻辑没坏
 ```
 

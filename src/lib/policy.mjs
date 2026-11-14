@@ -77,12 +77,36 @@ export function reduceTargetState(prev = {}, obs) {
     case 'retry':
     default: {
       const failCount = (prev.failCount || 0) + 1;
+      const code = obs.failureCode || null;
+      // Same cause failing three times in a row is not a transient blip: retrying it every
+      // 24h just burns the round budget and hides the gap behind a reassuring "retry".
+      // Escalate to blocked/needsAttention so it shows up as work for a human.
+      const sameCause = Boolean(code) && code === (prev.lastFailureCode || null);
+      const sameCauseCount = sameCause ? (prev.sameCauseCount || 1) + 1 : (code ? 1 : 0);
+      if (code && sameCauseCount >= (obs.escalateAfter ?? 3)) {
+        return {
+          ...base,
+          status: 'blocked',
+          failCount,
+          needsAttention: true,
+          lastFailureAt: checkedAt,
+          lastFailureCode: code,
+          sameCauseCount,
+          lastSuccessfulAt: prev.lastSuccessfulAt,
+          lastSuccessWindowTo: prev.lastSuccessWindowTo,
+          nextDueAt: null,
+          escalatedFrom: 'retry',
+          note: `${base.note}｜同一原因连续失败 ${sameCauseCount} 次（${code}），已停止自动重试，转为待处理。`,
+        };
+      }
       return {
         ...base,
         status: 'retry',
         failCount,
         pendingFrom: prev.pendingFrom || obs.windowFrom || prev.lastSuccessWindowTo || null,
         lastFailureAt: checkedAt,
+        lastFailureCode: code,
+        sameCauseCount,
         // Success cursor is preserved on purpose: a failed run must never look like progress.
         lastSuccessfulAt: prev.lastSuccessfulAt,
         lastSuccessWindowTo: prev.lastSuccessWindowTo,

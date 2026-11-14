@@ -230,6 +230,37 @@ async function cmdVerify(env, log) {
   }
 }
 
+/**
+ * Audit the public snapshot: freshness, capacity deficit, retry loops, date/directory
+ * integrity, edition coverage, voice duplication, credential leaks.
+ * Exit 1 when any P0/P1 problem is found, so it can gate a cron check.
+ */
+async function cmdAudit(env, log, args) {
+  const { auditSnapshot, formatAudit } = await import('./lib/audit.mjs');
+  const http = createHttpClient({ timeoutMs: 20_000, retries: 1 });
+  let browser = null;
+  const getBrowser = async () => {
+    if (!browser) browser = await Browser.launch({ timeoutMs: 30_000 });
+    return browser;
+  };
+  const site = new SiteClient({ env, http, getBrowser });
+  try {
+    const data = await site.readData();
+    const report = auditSnapshot(data, {
+      capacity: args.capacity
+        ? { roundsPerDay: Number(args.rounds) || 7, cap: Number(args.capacity) || 8, editionCap: 100 }
+        : undefined,
+      staleAfterHours: args.stale ? Number(args.stale) : undefined,
+    });
+    if (args.json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    else process.stdout.write(`${formatAudit(report)}\n`);
+    const blocking = report.problems.filter((p) => p.level === 'P0' || p.level === 'P1');
+    return blocking.length ? 1 : 0;
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+  }
+}
+
 /** Re-emit the 04 exchange file from a stored payload (useful after mapping fixes). */
 async function cmdExchange(env, log, args) {
   const runId = args.run || null;
@@ -320,6 +351,8 @@ async function main() {
       return cmdInventory(env, log);
     case 'exchange':
       return cmdExchange(env, log, args);
+    case 'audit':
+      return cmdAudit(env, log, args);
     default:
       process.stderr.write(`未知命令：${cmd}\n\n${usage()}`);
       return 2;
