@@ -8,6 +8,7 @@ import {
   planRound,
   reduceContentState,
   reduceTargetState,
+  resolveRoundCap,
 } from '../../src/lib/policy.mjs';
 
 const HOUR = 3600_000;
@@ -155,4 +156,12 @@ test('content failure backs off; blocked stops the clock', () => {
   const verified = reduceContentState(retry, { status: 'verified', checkedAt: base, evidence: 'transcript' });
   assert.equal(verified.contentStatus, 'verified');
   assert.equal(verified.contentFailCount, 0);
+});
+
+test('explicit --cap is honoured so a backlog can actually be cleared', () => {
+  const policy = { budget: { offEditionCap: 8, hardOffEditionCap: 40 } };
+  assert.equal(resolveRoundCap({ edition: false, cap: null, policy, targetCount: 70 }), 8, '默认仍是 8');
+  assert.equal(resolveRoundCap({ edition: false, cap: 24, policy, targetCount: 70 }), 24, '显式 cap 必须生效');
+  assert.equal(resolveRoundCap({ edition: false, cap: 999, policy, targetCount: 70 }), 40, '仍有硬上限，防止误写成两小时的长跑');
+  assert.equal(resolveRoundCap({ edition: true, cap: 8, policy, targetCount: 70 }), 70, '出刊轮覆盖全部目标');
 });

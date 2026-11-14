@@ -1,4 +1,10 @@
 # 用 crontab -e 加入（机器时区需为 Asia/Shanghai）
-# 只有 10:00 那一轮做全量覆盖，其余轮次默认最多 8 个目标。
-0 8,12,14,16,18,20,22 * * * cd /Users/CHANGE_ME/dafeige-radar-collector && /usr/bin/env node src/cli.mjs run >> logs/run.log 2>&1
-0 10 * * *               cd /Users/CHANGE_ME/dafeige-radar-collector && /usr/bin/env node src/cli.mjs run --cap 100 >> logs/run.log 2>&1
+#
+# 关键：不要直接调用 `src/cli.mjs run`。
+# 出刊轮次由「原计划时刻」决定，而 cron 启动会有几十秒抖动；直接调用 run 会让
+# 10:00:41 启动的那一轮退化成 8 个目标的补采，10 点全量永远跑不到。
+# ops/run-scheduled.mjs 会从 config/policy.json 反推当前应该属于哪个计划时段。
+0 8,10,12,14,16,18,20,22 * * * cd /Users/CHANGE_ME/dafeige-radar-collector && /usr/bin/env node ops/run-scheduled.mjs >> logs/run.log 2>&1
+
+# 可选：每天 23:40 体检一次公开快照（有 P0/P1 时退出码 1，方便配告警）
+40 23 * * * cd /Users/CHANGE_ME/dafeige-radar-collector && /usr/bin/env node src/cli.mjs audit >> logs/audit.log 2>&1

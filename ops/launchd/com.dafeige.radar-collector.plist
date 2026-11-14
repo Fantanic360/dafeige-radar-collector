@@ -12,8 +12,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/local/bin/node</string>
-    <string>/Users/CHANGE_ME/dafeige-radar-collector/src/cli.mjs</string>
-    <string>run</string>
+    <string>/Users/CHANGE_ME/dafeige-radar-collector/ops/run-scheduled.mjs</string>
   </array>
   <key>WorkingDirectory</key><string>/Users/CHANGE_ME/dafeige-radar-collector</string>
   <key>StartCalendarInterval</key>

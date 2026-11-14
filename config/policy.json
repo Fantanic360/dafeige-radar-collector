@@ -22,7 +22,8 @@
     "contentCap": 4,
     "runBudgetMs": 1500000,
     "perTargetTimeoutMs": 120000,
-    "note": "非 10 点最多 8 个目标；按 22 分钟单轮预算控制，超时保留进度并正常退出。"
+    "note": "非 10 点最多 8 个目标；按 22 分钟单轮预算控制，超时保留进度并正常退出。",
+    "hardOffEditionCap": 40
   },
   "backoff": {
     "hours": [

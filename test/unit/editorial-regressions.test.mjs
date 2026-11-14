@@ -4,7 +4,7 @@ import { rssAdapter, parseFeed } from '../../src/adapters/rss.mjs';
 import { bilibiliAdapter } from '../../src/adapters/bilibili.mjs';
 import { xiaoyuzhouAdapter } from '../../src/adapters/xiaoyuzhou.mjs';
 import { validateResult } from '../../src/adapters/base.mjs';
-import { Runner, mergeRemotePosts } from '../../src/lib/runner.mjs';
+import { Runner, batchApplied, mergeRemotePosts } from '../../src/lib/runner.mjs';
 import { postIdFor, sanitizePostId } from '../../src/lib/normalize.mjs';
 
 const from='2026-11-06T00:00:00Z', to='2026-11-14T00:00:00Z';
@@ -69,4 +69,28 @@ test('live empty roster does not reactivate local authors',async()=>{
 test('release identifiers use server-compatible characters and bounded length',()=>{
   assert.equal(postIdFor({sourceId:'carl',platform:'GitHub',platformPostId:'LearnPrompt/awesome-seedance@v0.3.0'}),'carl-github-LearnPrompt-awesome-seedance-v0-3-0');
   assert.match(sanitizePostId('v1.2.'+'x'.repeat(200)),/^[A-Za-z0-9_-]{1,100}$/);
+});
+
+test('readback does not deadlock when the site omits contentCheckedAt', () => {
+  // The public mirror exposes contentStatus but not contentCheckedAt. Treating the
+  // missing field as "not applied" preserves the outbox forever and the next round
+  // aborts on replay.
+  const applied = batchApplied(
+    { observations: [], posts: [], contentAttempts: [{ postId: 'p1', checkedAt: '2026-11-14T10:00:00Z' }] },
+    { states: {}, posts: { p1: { id: 'p1', contentStatus: 'verified' } } },
+  );
+  assert.equal(applied, true);
+});
+
+test('readback accepts an evidence upgrade but rejects a downgrade', () => {
+  const up = batchApplied(
+    { posts: [{ id: 'p', publishedAt: '2026-11-14T00:00:00Z', evidence: 'transcript' }] },
+    { states: {}, posts: { p: { id: 'p', publishedAt: '2026-11-14T00:00:00Z', evidence: 'fulltext' } } },
+  );
+  assert.equal(up, true, '站点存了 fulltext，推 transcript 不算失败');
+  const down = batchApplied(
+    { posts: [{ id: 'p', publishedAt: '2026-11-14T00:00:00Z', evidence: 'fulltext' }] },
+    { states: {}, posts: { p: { id: 'p', publishedAt: '2026-11-14T00:00:00Z', evidence: 'metadata' } } },
+  );
+  assert.equal(down, false, '站点只存了 metadata，说明正文没落库');
 });

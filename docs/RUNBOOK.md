@@ -7,7 +7,7 @@
 ```bash
 node src/cli.mjs doctor                 # 出问题先跑这个
 node src/cli.mjs plan                   # 看这一轮打算做什么
-node src/cli.mjs run                    # 跑一轮
+node ops/run-scheduled.mjs              # 按计划时段跑一轮（调度器就该调这个）
 node src/cli.mjs verify                 # 推送后回读公开镜像
 node src/cli.mjs history --limit 5      # 最近几轮的账本
 node src/cli.mjs audit                  # 体检公开快照（有 P0/P1 时退出码 1）
@@ -78,5 +78,7 @@ for (const r of RunLedger.listRuns('./state', 30)) {
 ## 6. 改了配置之后
 
 - 只改 `config/*.json`：不用重新部署，下一轮生效。
+- **不要让调度器直接跑 `src/cli.mjs run`**：出刊轮由「原计划时刻」决定，直接跑会因为几十秒抖动退化成补采轮。用 `ops/run-scheduled.mjs`。
+- 手工清积压：`node src/cli.mjs run --cap 24`（默认 8，硬上限 40）。
 - 改代码：先 `node --test test/unit/*.test.mjs test/e2e/*.test.mjs`，再 `doctor`，再 `run --dry-run --only <一个来源>`。
 - 新增来源：先确认 `sourceId` 与站点一致，再进 `config/sources.json`；站点侧没核实的账号不要写 `status: verified`。

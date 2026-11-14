@@ -8,7 +8,8 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=%f
-ExecStart=/usr/bin/env node src/cli.mjs run
+# run-scheduled 负责把「原计划时刻」传给采集器；不要直接跑 src/cli.mjs run
+ExecStart=/usr/bin/env node ops/run-scheduled.mjs
 Environment=RADAR_LOG_LEVEL=info
 TimeoutStartSec=1800
 Nice=10

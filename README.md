@@ -136,6 +136,8 @@ ops/                        launchd / cron / systemd 示例
 node src/cli.mjs run --scheduled-for "$RADAR_SCHEDULED_FOR"
 ```
 
+三种方式都指向 `ops/run-scheduled.mjs`——它负责把「原计划时刻」传给采集器。直接调用 `src/cli.mjs run` 会让 10:00:41 启动的那轮退化成补采轮，出刊全量永远跑不到。
+
 - macOS launchd：`ops/launchd/com.dafeige.radar-collector.plist`
 - Linux systemd：`ops/systemd/dafeige-collector@.service` + `.timer`
 - 现有 Automation 继续使用获准的工具读取来源、写 API；本仓库尚无证据证明已被它执行。

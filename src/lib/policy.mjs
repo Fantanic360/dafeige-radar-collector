@@ -117,6 +117,23 @@ export function reduceTargetState(prev = {}, obs) {
 }
 
 /**
+ * How many targets may this round carry?
+ *
+ * The default for supplementary rounds stays at 8, but an explicit `--cap` has to win:
+ * with 70 targets re-duing every 4h, "the edition round is the only full sweep" plus a
+ * hard 8 ceiling makes the backlog mathematically impossible to clear.
+ *
+ * A ceiling still applies (40) so a typo cannot turn a 22:00 supplementary round into a
+ * two-hour marathon.
+ */
+export function resolveRoundCap({ edition = false, cap = null, policy = null, targetCount = 0 } = {}) {
+  if (edition) return Math.max(1, targetCount);
+  const wanted = Number.isFinite(cap) && cap > 0 ? cap : policy?.budget?.offEditionCap ?? DEFAULT_OFF_EDITION_CAP;
+  const ceiling = policy?.budget?.hardOffEditionCap ?? 40;
+  return Math.max(1, Math.min(wanted, ceiling));
+}
+
+/**
  * Decide whether this round is an edition (10:00) round.
  * The operator runs the job at 08/10/12/14/16/18/20/22 Beijing time; only 10:00 is the
  * full-coverage edition run.

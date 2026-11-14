@@ -16,7 +16,7 @@ import { activeSources, buildTargets, DEFAULT_PATHS, loadJsonConfig, PKG_ROOT } 
 import { createHttpClient } from './http.mjs';
 import { IdempotencyStore, RunLedger } from './ledger.mjs';
 import { canonicalUrl, postIdFor, sanitizePostId } from './normalize.mjs';
-import { isEditionRound, planContentQueue, planRound } from './policy.mjs';
+import { isEditionRound, planContentQueue, planRound, resolveRoundCap } from './policy.mjs';
 import { FileLock, LeaseManager, StateStore } from './state.mjs';
 import { mergeStates, SiteClient } from './site-client.mjs';
 import { resolveAdapter } from '../adapters/registry.mjs';
@@ -340,7 +340,7 @@ export class Runner {
       this.store.data.targets = states;
       this.store.data.posts = mergeRemotePosts(this.store.data.posts, queue.posts || {});
       const edition = isEditionRound(scheduledFor, { editionHour: this.policy?.schedule?.editionHour });
-      const effectiveCap = edition ? targets.length : Math.min(cap ?? 8, 8);
+      const effectiveCap = resolveRoundCap({ edition, cap, policy: this.policy, targetCount: targets.length });
 
       const plan = planRound({ targets, states, now: new Date(this.clock.now()), cap: effectiveCap, onlySourceIds, ignoreDue: force || edition });
       ledger.set('needsAttention', queue.needsAttention || []);
@@ -568,6 +568,15 @@ export class Runner {
       const file = ledger.finish({ note: `${observations.length} 个目标、${payload.posts.length} 条原作、推送=${JSON.stringify(pushResult).slice(0, 80)}` });
 
       return { runId, evidenceDir, ledgerFile: file, payload, summary, pushResult, plan };
+    } catch (err) {
+      ledger.set('status', 'failed');
+      ledger.error({ stage: 'run', message: err.message, code: err.code || null });
+      try {
+        ledger.finish({ note: `本轮中止：${err.message}` });
+      } catch {
+        /* best effort: never mask the original error */
+      }
+      throw err;
     } finally {
       this.lock.release();
     }
@@ -637,19 +646,43 @@ export function mergeRemotePosts(local = {}, remote = {}) {
   return merged;
 }
 
+// Evidence kinds are not a strict ladder: a transcript *is* full text. What matters is
+// whether the body was actually obtained, so body-level kinds share a rank and only
+// metadata/summary are considered weaker.
+const EVIDENCE_RANK = { metadata: 0, summary: 1, chapters: 2, fulltext: 3, transcript: 3, visual: 3 };
+const evidenceRank = (value) => EVIDENCE_RANK[value] ?? -1;
+
+/**
+ * Did the site actually store this batch?
+ *
+ * Two rules learned the hard way:
+ *  - evidence only ever moves up the ladder, so compare ranks instead of demanding an
+ *    exact match (a site that stores `fulltext` for a `transcript` push is fine);
+ *  - a field the readback does not expose is *inconclusive*, not failure. Treating a
+ *    missing `contentCheckedAt` as "not applied" preserves the outbox forever and the next
+ *    round aborts on replay — a deadlock disguised as safety.
+ */
 export function batchApplied(batch, queue) {
   const states = Array.isArray(queue.states) ? indexByIdLocal(queue.states) : queue.states || {};
   const posts = Array.isArray(queue.posts) ? indexByIdLocal(queue.posts) : queue.posts || {};
-  return (batch.observations || []).every(obs => {
+  const observationsApplied = (batch.observations || []).every((obs) => {
     const remote = states[`${obs.sourceId}::${encodeURIComponent(obs.url)}`];
     return remote && Date.parse(remote.checkedAt) >= Date.parse(obs.checkedAt);
-  }) && (batch.posts || []).every(post => {
-    const remote = posts[post.id];
-    return remote && remote.publishedAt === post.publishedAt && (post.evidence === 'metadata' || remote.evidence === post.evidence);
-  }) && (batch.contentAttempts || []).every(attempt => {
-    const remote = posts[attempt.postId];
-    return remote && Date.parse(remote.contentCheckedAt) >= Date.parse(attempt.checkedAt);
   });
+  const postsApplied = (batch.posts || []).every((post) => {
+    const remote = posts[post.id];
+    if (!remote) return false;
+    if (remote.publishedAt !== post.publishedAt) return false;
+    return evidenceRank(remote.evidence) >= evidenceRank(post.evidence);
+  });
+  const attemptsApplied = (batch.contentAttempts || []).every((attempt) => {
+    const remote = posts[attempt.postId];
+    if (!remote) return false;
+    const remoteAt = Date.parse(remote.contentCheckedAt || remote.updatedAt || '');
+    if (!Number.isFinite(remoteAt)) return true; // readback cannot answer; do not block on it
+    return remoteAt >= Date.parse(attempt.checkedAt);
+  });
+  return observationsApplied && postsApplied && attemptsApplied;
 }
 
 function indexByIdLocal(list) {
