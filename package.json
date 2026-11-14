@@ -1,12 +1,12 @@
 {
   "name": "dafeige-radar-collector",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "description": "Repeatable, resumable collection engine for 《大飞哥每日大报!》 — target planning, platform adapters, backoff policy, lease/idempotency, run ledger and public-mirror verification.",
   "license": "MIT",
   "engines": {
-    "node": ">=20.10"
+    "node": ">=24.0"
   },
   "bin": {
     "radar-collect": "./src/cli.mjs"

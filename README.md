@@ -1,5 +1,7 @@
 # 大飞哥每日大报 · 采集引擎（radar-collector）
 
+> 2026-11-14 接入复核：本仓库已修正凭据隔离、严格 API 字段、证据等级和列表覆盖判断。旧版运行中的 `success` 与 `fulltext` 数量不能作为新版验收结果。站点远端租约仍是未接线模板；本地离线测试通过不代表已接管生产调度。具体边界见 [接入复核记录](docs/INTEGRATION_REVIEW_2026-11-14.md)。
+
 一个**可复跑、可中断、可审计**的采集执行层，给《大飞哥每日大报！》那套「站点 + 定时任务 + 外部 Agent」补上缺失的一环：真正去读平台、把结果按契约写回、并且**失败也留下可复核的证据**。
 
 站点本身只是状态机和阅读台。这个仓库是它缺的那双手。
@@ -20,14 +22,14 @@
 | 「列表成功」和「内容已读」混为一谈 | 观测（列表覆盖）与作品证据（metadata/fulltext/transcript/visual）分开记录，永不互相顶替 |
 | 失败只写「受限」 | 每个失败带 `阶段 + 代码 + 是否可重试 + 下一步`，并落截图/页面文本 |
 | 跨日无人值守没有验收记录 | 每次运行写 `state/runs/*.json` + `events.jsonl`，可直接生成验收表 |
-| 多 Agent 并发无租约 | 目标级租约 + 心跳 + 过期回收 + 单实例锁 |
-| 音频/推送可能重复计费 | 幂等键先落盘再请求，重复载荷直接跳过 |
+| 单机重复执行 | 本地目标租约与单实例锁；跨机租约需另行接线 |
+| 重复推送 | 已成功载荷按幂等键去重；本仓库不调用配音服务 |
 
 ---
 
 ## 2. 快速开始
 
-要求：Node ≥ 20.10（用全局 `fetch` / `WebSocket`，**零运行时依赖**）；要用浏览器层则需本机 Chrome/Chromium。
+要求：Node ≥ 24（测试使用内置 TypeScript 与 SQLite；零运行时依赖）；浏览器层需要用户自己的、获准运行 Chrome/Chromium 的环境。托管 Agent 应遵循其浏览器工具限制，不能用这个驱动绕过环境限制。
 
 ```bash
 node src/cli.mjs doctor        # 环境、配置、浏览器、站点连通性
@@ -38,7 +40,7 @@ node src/cli.mjs run           # 采一轮并按配置推送
 node src/cli.mjs verify        # 回读公开镜像，核对检查时间与作品
 ```
 
-常用参数：`--only ksr,kazike`（限定来源）、`--force`（忽略未到期）、`--cap 20`（本轮上限）、`--dry-run`。
+常用参数：`--only ksr,kazike`（限定来源）、`--force`（忽略未到期，仍不自动重试 blocked）、`--cap 8`（补采上限）、`--dry-run`、`--scheduled-for 2026-11-14T10:00:00+08:00`（调度器提供的原计划时刻）。缺少原计划时刻时按补采处理；延迟启动不能用当前钟点冒充原计划轮次。
 
 无凭据时默认是**只读镜像模式**：从公开 `/api/data` 取队列快照，产出的 `payload.json` / `result.json` 直接交给维护者合并。配置 `RADAR_EDITORIAL_BASE` + `RADAR_EDITORIAL_TOKEN` 后自动切到**采编写入模式**。
 
@@ -48,11 +50,11 @@ node src/cli.mjs verify        # 回读公开镜像，核对检查时间与作�
 
 | 平台 | 方式 | 列表 | 精确时间 | 正文/字幕 | 备注 |
 |---|---|---|---|---|---|
-| B站 | 渲染列表 + 官方 API | ✅ 17 个入口 | ✅ `view.pubdate`（含时区） | 官方字幕轨；空则标 blocked | 列表接口服务端 `-352` 风控，只能走渲染层 |
+| B站 | 渲染列表 + 官方 API | 需证明覆盖时间下界 | `view.pubdate`（含时区） | 字幕缺失与请求失败分别记录 | owner 必须与已核主页一致，截断列表不能写 success |
 | YouTube | 频道 RSS | ✅ | ✅ | ✗ | 需要 channelId，已支持自动解析 |
-| 小宇宙 | 页面 `__NEXT_DATA__` | ✅ | ✅ | 节目简介全文 | 音频本体需转录 |
-| 官网/播客/Newsletter | RSS/Atom + 自动发现 | ✅ | ✅ | `content:encoded` 有则全文 | 源被截断时会在 note 里说明 |
-| GitHub | Releases API | ✅ | ✅ | 发布说明全文 | 建议按仓库 pin，避免噪音 |
+| 小宇宙 | 页面 `__NEXT_DATA__` | 需验证覆盖边界 | 原平台日期 | 简介仅 metadata | 音频本体需转录 |
+| 官网/播客/Newsletter | RSS/Atom + 自动发现 | 需验证覆盖边界 | 原 feed 日期 | 默认 metadata，不能按字数认定全文 | RSS/节目简介不等于原片已读 |
+| GitHub | Releases API | 有限仓库查询不等于个人全部动态 | 原平台日期 | 完整发布说明 | 不以正文长度判断是否完整 |
 | 抖音 | 渲染个人主页 | ⚠️ 需登录态 | 相对时间不采信 | ✗ | 无登录态时明确 blocked（不假装成功） |
 | 小红书 | 渲染个人主页 | ⚠️ 常被风控 | — | ✗ | 重定向登录页即判 blocked |
 | 微博 | 渲染个人主页 | ⚠️ | — | ✗ | 同上 |
@@ -77,7 +79,7 @@ node src/cli.mjs verify        # 回读公开镜像，核对检查时间与作�
 
 ## 5. 运行预算（实测，非估算）
 
-实测（本机 macOS / Chrome 157 / 家庭宽带，`--cap 100` 全量一轮）：**66 个目标 10 分 36 秒**，26 成功、13 重试、7 blocked、20 被主机熔断跳过。
+旧版回传包记录：66 个目标用时 10 分 36 秒。其列表完整性与正文等级存在误判，因此下表只作为旧版耗时参考，不作为新版采编覆盖或稳定性验收。
 
 | 类型 | 实测均值 | 说明 |
 |---|---|---|
@@ -111,7 +113,7 @@ src/adapters/*              平台适配器
 config/sources.json         24 个启用来源、68 个已核验入口（sourceId 与站点一致）
 config/adapters.json        绑定覆盖（仓库 pin、feed 地址等）
 config/targets.extra.json   站点还没登记的补充目标（不改站点资料）
-test/unit, test/e2e         31 个单测 + 2 个端到端（无需网络）
+test/unit, test/e2e         单元、安全、并发与端到端测试（无需外网）
 docs/                       契约、运行手册、容量、安全、接入补丁
 ops/                        launchd / cron / systemd 示例
 ```
@@ -120,16 +122,16 @@ ops/                        launchd / cron / systemd 示例
 
 ## 7. 定时运行
 
-沿用现有那一个 Automation 的时段（08/10/12/14/16/18/20/22 北京时间），不要另建同名任务。三种落地方式：
+沿用现有任务的时段（08/10/12/14/16/18/20/22 北京时间），不要启动第二个采集调度。以下是独立运行环境的接入示意；不能仅复制命令就宣称已接管现有 Automation：
 
 ```bash
-# cron（最简单的兜底）
-0 8,10,12,14,16,18,20,22 * * * cd /path/to/dafeige-radar-collector && /usr/bin/env node src/cli.mjs run >> logs/run.log 2>&1
+# RADAR_SCHEDULED_FOR 必须由调度器传入原计划时刻，包含时区。
+node src/cli.mjs run --scheduled-for "$RADAR_SCHEDULED_FOR"
 ```
 
 - macOS launchd：`ops/launchd/com.dafeige.radar-collector.plist`
 - Linux systemd：`ops/systemd/dafeige-collector@.service` + `.timer`
-- 也可以继续由站点侧的 Automation 调度，只要它执行上面这条命令。
+- 现有 Automation 继续使用获准的工具读取来源、写 API；本仓库尚无证据证明已被它执行。
 
 进程收到 SIGINT/SIGTERM 会**做完当前目标再退出**，锁和租约都会被释放；被 `kill -9` 也不会卡死下一次运行（锁有过期接管）。
 
@@ -138,8 +140,8 @@ ops/                        launchd / cron / systemd 示例
 ## 8. 测试与自检
 
 ```bash
-node --test test/unit/*.test.mjs      # 31 个用例：时间精度、退避、游标、锁、租约、RSS 解析
-node --test test/e2e/*.test.mjs       # 2 个端到端：真实 Runner + 假站点，含幂等推送与失败不推进
+node --test test/unit/*.test.mjs      # 时间、证据、退避、游标、请求隔离、锁与租约
+node --test test/e2e/*.test.mjs       # 真实 Runner + 假站点，不访问生产来源
 node scripts/selfcheck.mjs            # 语法检查 + 配置校验 + 秘密扫描 + 全量测试
 ```
 

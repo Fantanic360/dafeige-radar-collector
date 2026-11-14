@@ -57,9 +57,10 @@ test('blocked leaves the auto queue and raises needsAttention', () => {
   assert.equal(next.needsAttention, true);
 });
 
-test('edition round detection uses Beijing 10:00 with tolerance', () => {
+test('edition round detection uses the exact original scheduled Beijing 10:00 slot', () => {
   assert.equal(isEditionRound(new Date('2026-11-13T02:00:00Z')), true); // 10:00 +08
-  assert.equal(isEditionRound(new Date('2026-11-13T02:40:00Z')), true); // within tolerance
+  assert.equal(isEditionRound(new Date('2026-11-13T02:40:00Z')), false);
+  assert.equal(isEditionRound(null), false);
   assert.equal(isEditionRound(new Date('2026-11-13T04:00:00Z')), false); // 12:00 +08
   assert.equal(isEditionRound(new Date('2026-11-13T00:00:00Z')), false); // 08:00 +08
 });

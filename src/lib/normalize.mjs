@@ -99,7 +99,12 @@ export function extractPostId(url, platform) {
  */
 export function postIdFor({ sourceId, platform, platformPostId, url }) {
   const pid = platformPostId || extractPostId(url, platform);
-  return `${sourceId}-${platformSlug(platform)}-${String(pid).replace(/[^\w.-]+/g, '-')}`;
+  return sanitizePostId(`${sourceId}-${platformSlug(platform)}-${pid}`);
+}
+
+export function sanitizePostId(value) {
+  const clean = String(value).replace(/[^A-Za-z0-9_-]+/g, '-');
+  return clean.length <= 100 ? clean : `${clean.slice(0, 83)}-${sha1(String(value)).slice(0, 16)}`;
 }
 
 /* ------------------------------------------------------------------- dates ---- */
@@ -110,7 +115,7 @@ const TZ_SUFFIX = /(Z|[+-]\d{2}:?\d{2})$/;
  * Parse any date-ish input into the contract shape.
  * @returns {{publishedAt: string|null, datePrecision: 'second'|'minute'|'date'|'unknown'}}
  */
-export function parsePublished(raw, { assumeTimezone = '+08:00' } = {}) {
+export function parsePublished(raw, { assumeTimezone = null } = {}) {
   if (raw === null || raw === undefined || raw === '') {
     return { publishedAt: null, datePrecision: 'unknown' };
   }
@@ -134,12 +139,13 @@ export function parsePublished(raw, { assumeTimezone = '+08:00' } = {}) {
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(s)) {
     const d = new Date(s);
     if (!Number.isNaN(d.getTime())) {
-      return { publishedAt: d.toISOString(), datePrecision: s.includes(':') ? 'second' : 'minute' };
+      return { publishedAt: d.toISOString(), datePrecision: /T\d{2}:\d{2}:\d{2}/.test(s) ? 'second' : 'minute' };
     }
   }
 
   // ISO without timezone -> treat as Beijing wall clock, but say so in precision.
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s) && !TZ_SUFFIX.test(s)) {
+    if (!assumeTimezone) return { publishedAt: null, datePrecision: 'unknown' };
     const d = new Date(`${s}${assumeTimezone}`);
     if (!Number.isNaN(d.getTime())) {
       return { publishedAt: d.toISOString(), datePrecision: 'minute' };
@@ -156,12 +162,6 @@ export function parsePublished(raw, { assumeTimezone = '+08:00' } = {}) {
   if (rfc) {
     const d = new Date(s);
     if (!Number.isNaN(d.getTime())) return { publishedAt: d.toISOString(), datePrecision: 'second' };
-  }
-
-  const anyDate = new Date(s);
-  if (!Number.isNaN(anyDate.getTime()) && /\d{4}/.test(s)) {
-    const hasTime = /\d{1,2}:\d{2}/.test(s);
-    return { publishedAt: anyDate.toISOString(), datePrecision: hasTime ? 'minute' : 'date' };
   }
 
   return { publishedAt: null, datePrecision: 'unknown' };

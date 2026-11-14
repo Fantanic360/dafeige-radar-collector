@@ -32,6 +32,7 @@ export function loadEnv(env = process.env) {
     publicBase: env.RADAR_PUBLIC_BASE || 'https://director-ai-radar-open.frank345.chatgpt.site',
     editorialBase: env.RADAR_EDITORIAL_BASE || '',
     editorialToken: env.RADAR_EDITORIAL_TOKEN || '',
+    authHeader: 'OAI-Sites-Authorization',
     githubToken: env.GITHUB_TOKEN || '',
     chromePath: env.CHROME_PATH || '',
     logLevel: env.RADAR_LOG_LEVEL || 'info',

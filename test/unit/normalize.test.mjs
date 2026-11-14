@@ -19,10 +19,11 @@ test('parsePublished keeps an explicit timezone and marks second precision', () 
   assert.equal(r.datePrecision, 'second');
 });
 
-test('parsePublished treats a naked ISO string as Beijing wall clock', () => {
+test('parsePublished refuses a timezone-free timestamp unless explicitly known', () => {
   const r = parsePublished('2026-11-13T18:30:00');
-  assert.equal(r.publishedAt, '2026-11-13T10:30:00.000Z');
-  assert.equal(r.datePrecision, 'minute');
+  assert.equal(r.publishedAt, null);
+  const known = parsePublished('2026-11-13T18:30:00', { assumeTimezone: '+08:00' });
+  assert.equal(known.publishedAt, '2026-11-13T10:30:00.000Z');
 });
 
 test('parsePublished never invents a time for a date-only value', () => {

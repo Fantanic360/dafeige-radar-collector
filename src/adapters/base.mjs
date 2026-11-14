@@ -38,6 +38,12 @@ export function validateResult(result, target) {
   if (result && !VALID_STATUS.has(result.status)) problems.push(`非法 status: ${result?.status}`);
   if (result && typeof result.note !== 'string') problems.push('note 必须是字符串');
   if (result && !Array.isArray(result.posts)) problems.push('posts 必须是数组');
+  for (const post of result?.posts || []) {
+    if (!post.title || !post.url || !post.publishedAt) problems.push('作品缺少标题/原链/原始日期，应保留为线索');
+    if (post.publishedAt && post.publishedAt.includes('T') && (!/(Z|[+-]\d{2}:\d{2})$/.test(post.publishedAt) || !Number.isFinite(Date.parse(post.publishedAt)))) problems.push('精确发布日期必须有真实时区');
+    if (post.datePrecision === 'relative' || post.yearInferred) problems.push('相对时间或推测年份不能成为原始发布日期');
+    if (post.publishedAt?.includes('T') && result.windowTo && Date.parse(post.publishedAt) > Date.parse(result.windowTo)) problems.push('未来发布日期不能作为当前已发布作品');
+  }
   if (result && result.status === 'success' && result.itemsRead === 0 && !result.note.includes('无新')) {
     problems.push('success 但 itemsRead=0 且未说明“无新”');
   }

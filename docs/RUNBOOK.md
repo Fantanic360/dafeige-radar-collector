@@ -17,8 +17,8 @@ node --test test/unit/*.test.mjs        # 32 秒内确认逻辑没坏
 
 ## 1. 首次部署
 
-1. 装 Node ≥ 20.10；要浏览器层就装 Chrome。
-2. `cp .env.example .env` 并填（或直接用 shell 环境变量）：
+1. 装 Node ≥ 24；只在获准的独立执行环境使用浏览器层。
+2. 运行时传入配置；本站服务凭据不得写入 `.env`、配置、日志或仓库：
    - `RADAR_PUBLIC_BASE`：公开阅读台（默认已填）。
    - `RADAR_EDITORIAL_BASE` / `RADAR_EDITORIAL_TOKEN`：**只有拿到写权限才填**；不填就是只读模式。
    - `GITHUB_TOKEN`：可选，只读公开仓库也能跑（匿名 60 次/小时）。

@@ -204,19 +204,23 @@ function makeGatedAdapter(spec) {
         return ms >= new Date(windowFrom).getTime() - 86400_000 && ms <= new Date(windowTo).getTime() + 86400_000;
       });
 
-      result.status = 'success';
+      result.status = 'retry';
       result.pagesRead = 1;
       result.itemsRead = items.length;
       result.oldestSeenAt = oldest ? new Date(oldest).toISOString() : null;
       result.newestSeenAt = newest ? new Date(newest).toISOString() : null;
-      result.posts = inWindow;
+      // DOM cards do not yet verify original owner, canonical title and exact date.
+      // Keep them as leads, never as admissible collection.posts.
+      result.posts = [];
+      result.leads = inWindow;
+      if (inWindow.length) await ctx.saveEvidence(`${target.sourceId}-${spec.name}-leads.json`, JSON.stringify(inWindow, null, 2));
       result.evidenceUrl = target.url;
       result.note =
         `浏览器实际渲染个人主页并解析到 ${items.length} 个作品入口，窗口内 ${inWindow.length} 条。` +
         `列表时间多为平台相对标签，未冒充精确发布时间；正文未取得。` +
-        `只证明本账号该列表的可见条目，不代表历史作品全读。`;
+        `只证明本账号该列表的可见条目；原作身份与日期仍需逐条核实，线索不写入作品记录，成功游标不推进。`;
       if (!inWindow.length) {
-        result.note = `已渲染个人主页并解析 ${items.length} 个作品入口，其中没有落在窗口 ${windowFrom} → ${windowTo} 的新条目。仅覆盖本账号公开可见列表。`;
+        result.note = `已渲染个人主页并解析 ${items.length} 个作品入口，当前日期/列表边界证据不足以判断窗口 ${windowFrom} → ${windowTo} 的更新情况；成功游标不推进。`;
       }
       return result;
     },

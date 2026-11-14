@@ -59,7 +59,7 @@ export function parseFeed(xml) {
   const items = blocks.map((block) => {
     const title = stripTags(firstTag(block, ['title']) || '');
     const link = isAtom ? atomLink(block) : stripTags(firstTag(block, ['link']) || '') || atomLink(block);
-    const rawDate = firstTag(block, ['pubDate', 'published', 'updated', 'dc:date']);
+    const rawDate = firstTag(block, ['pubDate', 'published', 'dc:date']);
     const guid = stripTags(firstTag(block, ['guid', 'id']) || '') || link;
     const content =
       firstTag(block, ['content:encoded', 'content', 'description', 'summary']) || '';
@@ -189,7 +189,10 @@ export const rssAdapter = {
       if (ms === null || ms < new Date(windowFrom).getTime() || ms > new Date(windowTo).getTime()) continue;
 
       const postId = `${target.sourceId}-rss-${(item.guid || item.link).replace(/[^\w.-]+/g, '-').slice(-60)}`;
-      const hasBody = item.contentText.length > 600;
+      // Feed descriptions and even content:encoded may be excerpts or show notes.
+      // Length is not proof of a complete article or podcast transcript.
+      const hasBody = false;
+      const evidenceFile = item.contentText ? await ctx.saveEvidence(`${postId}-feed.txt`, item.contentText) : null;
       posts.push({
         id: postId,
         sourceId: target.sourceId,
@@ -205,7 +208,7 @@ export const rssAdapter = {
           ? `订阅源 ${feedUrl} 自带正文（${item.contentText.length} 字），已按原文入库；作者字段=${item.author || '未标注'}。`
           : `订阅源 ${feedUrl} 仅提供摘要（${item.contentText.length} 字），正文未取得。`,
         platformPostId: item.guid,
-        extra: { feedUrl, summaryText: item.contentText.slice(0, 500) },
+        extra: { feedUrl, summaryText: item.contentText.slice(0, 500), evidenceFile, contentKind: 'feed-text-unreviewed' },
       });
 
       if (!hasBody) {
@@ -219,7 +222,9 @@ export const rssAdapter = {
       }
     }
 
-    result.status = 'success';
+    const datesComplete = parsed.items.every(item => item.link && parsePublished(item.rawDate).publishedAt?.includes('T'));
+    const boundaryReached = oldest !== null && oldest <= new Date(windowFrom).getTime();
+    result.status = datesComplete && boundaryReached ? 'success' : 'retry';
     result.pagesRead = 1;
     result.itemsRead = parsed.items.length;
     result.oldestSeenAt = oldest ? new Date(oldest).toISOString() : null;
@@ -232,7 +237,7 @@ export const rssAdapter = {
     result.note =
       `已读取订阅源 ${feedUrl}（${parsed.isAtom ? 'Atom' : 'RSS'}，共 ${parsed.items.length} 条，` +
       `最旧 ${result.oldestSeenAt || '未知'}）；窗口 ${windowFrom} → ${windowTo} 内 ${posts.length} 条。` +
-      `${truncated ? '该源本身只输出极少条目，覆盖有限，不能据此判断“没有更新”。' : ''}` +
+      `${!boundaryReached || !datesComplete ? '未证明完整覆盖声明窗口（源截断或原始日期缺失），成功游标不推进。' : ''}` +
       `${discovery ? `源由 ${discovery.how} 发现。` : ''}仅覆盖该订阅源，不代表其他平台。`;
     return result;
   },
@@ -241,11 +246,8 @@ export const rssAdapter = {
     try {
       const html = await ctx.http.text(post.url, { timeoutMs: 20_000 });
       const text = stripTags(html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' '));
-      if (text.length < 400) {
-        return { status: 'retry', note: `原文正文过短（${text.length} 字），可能被拦截或需登录` };
-      }
       const file = await ctx.saveEvidence(`${post.id}.txt`, text.slice(0, 200_000));
-      return { status: 'verified', note: `已抓取原文正文 ${text.length} 字，存 ${file}`, evidence: 'fulltext', transcriptFile: file };
+      return { status: 'retry', note: `已保存页面文本 ${text.length} 字于 ${file}；尚未区分导航、付费墙、摘要与完整正文，须人工或专用解析器核实读取范围后才能升级。播客节目简介不等于转录。`, evidence: 'metadata', evidenceFile: file };
     } catch (err) {
       return { status: 'retry', note: `原文抓取失败：${err.message}` };
     }

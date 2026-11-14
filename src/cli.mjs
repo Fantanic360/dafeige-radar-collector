@@ -52,7 +52,7 @@ function usage() {
 用法:
   node src/cli.mjs doctor                环境/配置/连通性检查
   node src/cli.mjs plan [--only a,b]     只看本轮会做什么
-  node src/cli.mjs run [--dry-run]       执行一轮
+  node src/cli.mjs run [--dry-run] [--scheduled-for ISO带时区] 执行一轮（缺省仅补采）
   node src/cli.mjs verify                回读公开镜像
   node src/cli.mjs inventory             每个目标的适配器绑定
   node src/cli.mjs history [--limit 10]  最近运行账本
@@ -138,7 +138,7 @@ async function cmdPlan(env, log, args) {
   const stateDir = path.join(ROOT, 'state');
   const state = readJson(path.join(stateDir, 'state.json'), { targets: {} }) || { targets: {} };
 
-  const edition = isEditionRound(new Date(), { editionHour: 10 });
+  const edition = isEditionRound(args['scheduled-for'], { editionHour: 10 });
   const cap = edition ? 100 : 8;
   const only = args.only ? String(args.only).split(',').map((s) => s.trim()).filter(Boolean) : null;
   const plan = planRound({ targets, states: state.targets || {}, now: new Date(), cap, onlySourceIds: only });
@@ -191,7 +191,7 @@ async function cmdRun(env, log, args) {
   process.on('SIGTERM', () => onSignal('SIGTERM'));
 
   try {
-    const out = await runner.runOnce({ dryRun, onlySourceIds: only, force, cap });
+    const out = await runner.runOnce({ dryRun, onlySourceIds: only, force, cap, scheduledFor: args['scheduled-for'] || null });
     log.info('本轮结束', {
       runId: out.runId,
       targets: out.payload.observations.length,

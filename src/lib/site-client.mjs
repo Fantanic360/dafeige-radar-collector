@@ -15,6 +15,19 @@
  */
 import { CollectError } from './core.mjs';
 
+// /api/context editorial.collection.api: keep local audit metadata out of strict writes.
+const COLLECTION_FIELDS = {
+  observations: ['sourceId', 'platform', 'url', 'checkedAt', 'windowFrom', 'windowTo', 'status', 'note', 'evidenceUrl', 'cursor'],
+  posts: ['id', 'sourceId', 'platform', 'url', 'title', 'publishedAt', 'discoveredAt', 'evidence', 'evidenceUrl', 'evidenceNote', 'duration'],
+  contentAttempts: ['postId', 'checkedAt', 'status', 'note'],
+};
+
+export function collectionWritePayload(payload = {}) {
+  return Object.fromEntries(Object.entries(COLLECTION_FIELDS).map(([list, fields]) => [list,
+    (payload[list] || []).map((item) => Object.fromEntries(fields.filter((key) => item[key] !== undefined).map((key) => [key, item[key]]))),
+  ]));
+}
+
 export class SiteClient {
   constructor({ env, http, getBrowser = null, logger = null }) {
     this.env = env;
@@ -24,7 +37,7 @@ export class SiteClient {
     this.publicBase = (env.publicBase || '').replace(/\/$/, '');
     this.editorialBase = (env.editorialBase || '').replace(/\/$/, '');
     this.token = env.editorialToken || '';
-    this.authHeader = env.authHeader || 'authorization';
+    this.authHeader = 'OAI-Sites-Authorization';
     this.browserOrigin = this.editorialBase || this.publicBase;
     this.mode = this.editorialBase && this.token ? 'editorial' : 'mirror';
     this.degraded = false;
@@ -39,16 +52,28 @@ export class SiteClient {
     return `${b}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
-  headers(extra = {}) {
-    const h = { accept: 'application/json', ...extra };
-    if (this.token) h[this.authHeader] = this.token.startsWith('Bearer ') ? this.token : `Bearer ${this.token}`;
+  headers(extra = {}, target, useAuth = true) {
+    const h = { accept: 'application/json' };
+    for (const [name, value] of Object.entries(extra)) {
+      if (/authorization|cookie|token|api[-_]?key|secret/i.test(name)) {
+        throw new CollectError('不得通过额外请求头传入凭据', { status: 'blocked', stage: 'security', code: 'EXTRA_CREDENTIAL' });
+      }
+      h[name] = value;
+    }
+    if (useAuth && this.token && this.editorialBase && target && new URL(target).origin === new URL(this.editorialBase).origin) {
+      h[this.authHeader] = this.token.startsWith('Bearer ') ? this.token : `Bearer ${this.token}`;
+    }
     return h;
   }
 
   /** Plain HTTP first; fall back to executing the request inside the rendered page. */
   async request(path, { method = 'GET', body = null, base = null, headers = {}, idempotencyKey = null } = {}) {
     const target = this.url(path, base);
-    const h = this.headers({ ...headers, ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}) });
+    const origin = new URL(target).origin;
+    const allowedOrigins = [this.publicBase, this.editorialBase].filter(Boolean).map((b) => new URL(b).origin);
+    if (!allowedOrigins.includes(origin)) throw new CollectError('Site 请求仅允许已配置的本站来源', { status: 'blocked', stage: 'security', code: 'ORIGIN_MISMATCH' });
+    const h = this.headers({ ...headers, ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}) }, target, base === null && this.mode === 'editorial');
+    const authenticated = Boolean(h[this.authHeader]);
     if (body) h['content-type'] = 'application/json';
 
     try {
@@ -56,14 +81,16 @@ export class SiteClient {
         method,
         headers: h,
         body: body ? JSON.stringify(body) : undefined,
-        timeoutMs: 30_000,
+        attemptTimeoutMs: 30_000,
+        allowedOrigin: origin,
       });
       const text = await res.text();
       return { ok: true, status: res.status, body: this.#parse(text), raw: text, via: 'http' };
     } catch (err) {
       const status = err.details?.status;
       const lookBlocked = status === 403 || status === 503 || err.code === 'NETWORK' || err.code === 'TIMEOUT';
-      if (!lookBlocked || !this.getBrowser) throw err;
+      // Never inject an owner credential into a page's JavaScript context.
+      if (authenticated || !lookBlocked || !this.getBrowser) throw err;
       if (this.log) this.log.warn('站点直连失败，改用浏览器同源请求', { path, status: status ?? err.code });
       return this.requestViaBrowser(target, { method, body, headers: h, idempotencyKey });
     }
@@ -79,6 +106,9 @@ export class SiteClient {
   }
 
   async requestViaBrowser(target, { method = 'GET', body = null, headers = {} } = {}) {
+    if (Object.keys(headers).some((name) => /authorization|cookie|token|api[-_]?key|secret/i.test(name))) {
+      throw new CollectError('认证请求不允许浏览器脚本回退', { status: 'blocked', stage: 'security', code: 'CREDENTIAL_BROWSER_FALLBACK' });
+    }
     if (!this.getBrowser) {
       throw new CollectError('需要浏览器回退但浏览器层未启用', {
         status: 'retry',
@@ -91,14 +121,16 @@ export class SiteClient {
     const origin = new URL(target).origin;
     const current = await browser.session.evaluate('location.origin').catch(() => null);
     if (current !== origin) {
-      await browser.goto(this.browserOrigin || origin, { settleMs: 1500 });
+      await browser.goto(origin, { settleMs: 1500 });
     }
+    if (await browser.session.evaluate('location.origin') !== origin) throw new CollectError('浏览器未停留在请求的本站来源', { status: 'blocked', stage: 'security', code: 'ORIGIN_MISMATCH' });
 
     const script = `(async () => {
       try {
         const res = await fetch(${JSON.stringify(target)}, {
           method: ${JSON.stringify(method)},
           headers: ${JSON.stringify(headers)},
+          redirect: 'error',
           ${body ? `body: ${JSON.stringify(JSON.stringify(body))},` : ''}
         });
         const text = await res.text();
@@ -124,12 +156,16 @@ export class SiteClient {
   /** Queue + states. Editorial returns live queue; mirror derives it from the snapshot. */
   async fetchQueue() {
     if (this.mode === 'editorial') {
-      const res = await this.request('/api/collection');
+      const [res, contextRes] = await Promise.all([this.request('/api/collection'), this.request('/api/context')]);
       const body = res.body || {};
       return {
         mode: 'editorial',
         states: indexById(body.states || body.targets || []),
         posts: indexById(body.posts || []),
+        targets: body.targets || [],
+        due: body.due || [],
+        sources: contextRes.body?.sources || [],
+        editorial: contextRes.body?.editorial || {},
         needsAttention: body.needsAttention || [],
         pendingPosts: body.pendingPosts || [],
         blockedPosts: body.blockedPosts || [],
@@ -175,7 +211,7 @@ export class SiteClient {
     }
     const res = await this.request('/api/collection', {
       method: 'POST',
-      body: payload,
+      body: collectionWritePayload(payload),
       idempotencyKey,
     });
     return res.body;

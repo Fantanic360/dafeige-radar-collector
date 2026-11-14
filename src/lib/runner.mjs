@@ -15,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { activeSources, buildTargets, DEFAULT_PATHS, loadJsonConfig, PKG_ROOT } from './config.mjs';
 import { createHttpClient } from './http.mjs';
 import { IdempotencyStore, RunLedger } from './ledger.mjs';
-import { canonicalUrl, postIdFor } from './normalize.mjs';
+import { canonicalUrl, postIdFor, sanitizePostId } from './normalize.mjs';
 import { isEditionRound, planContentQueue, planRound } from './policy.mjs';
 import { FileLock, LeaseManager, StateStore } from './state.mjs';
 import { mergeStates, SiteClient } from './site-client.mjs';
@@ -106,13 +106,14 @@ export class Runner {
   }
 
   /** Resolve the working set: config targets, upgraded with live profiles from the mirror. */
-  async resolveTargets(remoteSources = []) {
+  async resolveTargets(remoteSources = null) {
     const baseTargets = buildTargets(this.sourcesDoc, this.adapterDoc, this.extraDoc);
-    if (!remoteSources.length) return baseTargets;
+    if (!Array.isArray(remoteSources)) return baseTargets;
 
     // The site is the system of record for profile URLs. Use its profile list when it is
     // available, but never let it add a source that config does not consider active.
-    const byId = new Map(remoteSources.map((s) => [s.id, s]));
+    const activeRemote = remoteSources.filter(s => s.enabled === true && s.directoryStatus !== 'removed');
+    const byId = new Map(activeRemote.map((s) => [s.id, s]));
     const merged = [];
     for (const t of baseTargets) {
       const remote = byId.get(t.sourceId);
@@ -122,13 +123,12 @@ export class Runner {
       if (match) merged.push({ ...t, label: match.label || t.label });
     }
     // Any remote profile that config is missing (newly verified by another agent).
-    const seen = new Set(merged.map((t) => t.url));
-    for (const s of remoteSources) {
+    const seen = new Set(merged.map((t) => t.id));
+    for (const s of activeRemote) {
       if (s.directoryStatus === 'removed' || s.enabled === false) continue;
-      const cfg = activeSources(this.sourcesDoc).find((x) => x.id === s.id);
-      if (!cfg) continue;
+      const cfg = activeSources(this.sourcesDoc).find((x) => x.id === s.id) || {};
       for (const p of (s.profiles || []).filter((x) => x.status === 'verified' && x.url)) {
-        if (seen.has(p.url)) continue;
+        if (seen.has(`${s.id}::${encodeURIComponent(p.url)}`)) continue;
         merged.push({
           id: `${s.id}::${encodeURIComponent(p.url)}`,
           sourceId: s.id,
@@ -149,6 +149,9 @@ export class Runner {
 
   windowFor(target, states, now) {
     const st = states[target.id] || {};
+    if (st.pendingFrom && Number.isFinite(Date.parse(st.pendingFrom)) && Date.parse(st.pendingFrom) < now.getTime()) {
+      return { windowFrom: new Date(st.pendingFrom).toISOString(), windowTo: now.toISOString() };
+    }
     // Overlap the previous success window by 30 minutes: cheap insurance against clock
     // skew and late-appearing items, and duplicates are removed by post id anyway.
     const fromBase =
@@ -254,7 +257,8 @@ export class Runner {
   }
 
   async runContentQueue({ states, posts, runCtx, cap }) {
-    const due = planContentQueue({ posts, now: new Date(this.clock.now()), cap });
+    const eligiblePosts = this.activeSourceIds ? Object.fromEntries(Object.entries(posts).filter(([, p]) => this.activeSourceIds.has(p.sourceId))) : posts;
+    const due = planContentQueue({ posts: eligiblePosts, now: new Date(this.clock.now()), cap });
     const done = [];
     for (const post of due) {
       if (this.aborted) break;
@@ -283,7 +287,8 @@ export class Runner {
         attempt = { status: 'retry', note: `正文补采异常：${err.message}` };
       }
       this.store.applyContentAttempt(post.id, { ...attempt, checkedAt: this.clock.nowIso() });
-      done.push({ postId: post.id, ...attempt });
+      this.store.save();
+      done.push({ postId: post.id, ...attempt, checkedAt: this.clock.nowIso() });
     }
     return done;
   }
@@ -295,33 +300,50 @@ export class Runner {
    * @param {string[]} [opts.onlySourceIds]
    * @param {number} [opts.cap] override target cap
    */
-  async runOnce({ dryRun = false, onlySourceIds = null, cap = null, force = false } = {}) {
+  async runOnce({ dryRun = false, onlySourceIds = null, cap = null, force = false, scheduledFor = null } = {}) {
+    if (scheduledFor && !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(scheduledFor)) throw new Error('scheduledFor 必须是带时区的原计划执行时刻');
     this.lock.acquire();
-    const runId = `run_${beijingDate(this.clock.now()).replace(/-/g, '')}_${new Date(this.clock.now()).toISOString().slice(11, 16).replace(':', '')}_${shortHash(this.clock.nowIso(), 6)}`;
+    const runId = `run_${this.clock.nowIso().replace(/[-:.]/g, '')}_${shortHash(this.clock.nowIso(), 6)}`;
     const evidenceDir = ensureDir(path.join(this.evidenceRoot, runId));
     const ledger = new RunLedger(this.stateDir, {
       runId,
-      meta: { edition: isEditionRound(this.clock.now(), { editionHour: this.policy?.schedule?.editionHour }), mode: this.site.mode },
+      meta: { edition: isEditionRound(scheduledFor, { editionHour: this.policy?.schedule?.editionHour }), scheduledFor, mode: this.site.mode },
     });
 
     const reclaimed = this.lease.reclaimExpired();
     if (reclaimed.length) ledger.event('lease.reclaimed', { count: reclaimed.length });
 
     try {
+      if (!dryRun && this.site.canWrite) {
+        for (const pending of this.store.data.meta.pendingCollectionBatches || []) {
+          const replay = await this.site.pushCollection(pending.payload, { idempotencyKey: pending.key });
+          if (replay?.ok !== true) throw new Error('待重放批次未获明确成功，保留outbox并停止');
+          const replayQueue = await this.site.fetchQueue();
+          if (!batchApplied(pending.payload, replayQueue)) throw new Error('待重放批次未通过回读，保留outbox并停止');
+          this.idempotency.remember(pending.key, { runId: pending.payload.runId });
+        }
+        this.store.data.meta.pendingCollectionBatches = [];
+        this.store.save();
+      }
       this.log?.info('读取站点队列', { mode: this.site.mode, base: this.site.mode === 'editorial' ? this.site.editorialBase : this.site.publicBase });
       const queue = await this.site.fetchQueue().catch((err) => {
         this.log?.warn('无法读取站点队列，退回本地状态', { error: err.message });
         ledger.error({ stage: 'queue', message: err.message });
-        return { mode: 'offline', states: {}, posts: {}, sources: [] };
+        // An unavailable live roster must not silently revive removed local targets.
+        throw new CollectError('无法读取实时采编队列，停止本轮以保留原状态', { status: 'retry', stage: 'queue' });
       });
 
-      const remoteSources = queue.sources?.length ? queue.sources : [];
+      const remoteSources = Array.isArray(queue.sources) ? queue.sources : null;
+      this.activeSourceIds = remoteSources ? new Set(remoteSources.filter(s => s.enabled === true && s.directoryStatus !== 'removed').map(s => s.id)) : null;
       const targets = await this.resolveTargets(remoteSources);
       const states = mergeStates(this.store.allTargets(), queue.states || {});
-      const edition = isEditionRound(this.clock.now(), { editionHour: this.policy?.schedule?.editionHour });
-      const effectiveCap = cap ?? (edition ? (this.policy?.budget?.editionCap || 100) : (this.policy?.budget?.offEditionCap || 8));
+      this.store.data.targets = states;
+      this.store.data.posts = mergeRemotePosts(this.store.data.posts, queue.posts || {});
+      const edition = isEditionRound(scheduledFor, { editionHour: this.policy?.schedule?.editionHour });
+      const effectiveCap = edition ? targets.length : Math.min(cap ?? 8, 8);
 
-      const plan = planRound({ targets, states, now: new Date(this.clock.now()), cap: effectiveCap, onlySourceIds, ignoreDue: force });
+      const plan = planRound({ targets, states, now: new Date(this.clock.now()), cap: effectiveCap, onlySourceIds, ignoreDue: force || edition });
+      ledger.set('needsAttention', queue.needsAttention || []);
       ledger.set('plan', { edition, cap: effectiveCap, considered: plan.considered, selected: plan.selected.length, deferred: plan.deferred.length });
       ledger.count('planned', plan.selected.length);
       this.log?.info('本轮计划', { edition, considered: plan.considered, selected: plan.selected.length, cap: effectiveCap });
@@ -329,9 +351,48 @@ export class Runner {
       const observations = [];
       const newPosts = [];
       const contentAttempts = [];
+      const sent = { observations: 0, posts: 0, contentAttempts: 0 };
+      let pushResult = { skipped: true, reason: dryRun ? 'dry-run 未写生产' : '未配置采编端凭据；结果包已生成，待维护者合并' };
+      let pushFailed = false;
+      const flushBatch = async () => {
+        if (dryRun || !this.site.canWrite || pushFailed) return;
+        const batch = {
+          runId,
+          generatedAt: this.clock.nowIso(),
+          observations: observations.slice(sent.observations),
+          posts: dedupeById(newPosts.slice(sent.posts)),
+          contentAttempts: contentAttempts.slice(sent.contentAttempts),
+        };
+        if (!batch.observations.length && !batch.posts.length && !batch.contentAttempts.length) return;
+        const key = IdempotencyStore.keyFor('collection', { observations: batch.observations, posts: batch.posts, contentAttempts: batch.contentAttempts });
+        // Durable before sending: a crash or ambiguous network result is replayable.
+        this.store.data.meta.pendingCollectionBatches = [{ key, payload: batch }];
+        this.store.save();
+        try {
+          const res = await this.site.pushCollection(batch, { idempotencyKey: key });
+          if (res?.ok !== true) throw new Error('采编接口未明确确认保存成功');
+          const confirmed = await this.site.fetchQueue();
+          if (!batchApplied(batch, confirmed)) throw new Error('采编批次回读未确认，保留outbox');
+          this.idempotency.remember(key, { runId });
+          sent.observations = observations.length;
+          sent.posts = newPosts.length;
+          sent.contentAttempts = contentAttempts.length;
+          this.store.data.meta.pendingCollectionBatches = [];
+          this.store.data.meta.lastPushAt = this.clock.nowIso();
+          this.store.save();
+          ledger.count('pushed');
+          pushResult = { ok: true, response: res };
+        } catch (err) {
+          pushFailed = true;
+          pushResult = { ok: false, error: err.message, outboxPreserved: true };
+          ledger.count('pushFailed');
+          ledger.error({ stage: 'push', message: err.message });
+        }
+      };
       // Per-host failure guard: if a platform is down for this network, stop burning the
       // round budget on it and say so explicitly instead of timing out 8 times.
       const hostFailures = new Map();
+      const hostBotBlocks = new Set();
 
       for (const [idx, target] of plan.selected.entries()) {
         if (this.aborted) {
@@ -345,7 +406,7 @@ export class Runner {
             return 'unknown';
           }
         })();
-        if ((hostFailures.get(host) || 0) >= 2) {
+        if (hostBotBlocks.has(host) || (hostFailures.get(host) || 0) >= 2) {
           const obs = {
             sourceId: target.sourceId,
             platform: target.platform,
@@ -354,12 +415,11 @@ export class Runner {
             windowFrom: this.windowFor(target, states, new Date(this.clock.now())).windowFrom,
             windowTo: this.clock.nowIso(),
             status: 'retry',
-            note: `本轮该主机（${host}）已连续失败 2 次，跳过剩余目标以保留预算；未做任何读取，不据此判断有无更新。`,
+            note: `本轮该主机（${host}）${hostBotBlocks.has(host) ? '已明确返回人机验证，停止同站其他入口' : '已连续失败 2 次，跳过剩余目标以保留预算'}；未做任何读取，不据此判断有无更新。`,
             evidenceUrl: target.url,
             skippedByBreaker: true,
           };
-          observations.push(obs);
-          this.store.applyObservation(obs);
+          // A skipped target is not an actual new check. Keep its original checkedAt.
           ledger.count('skippedByBreaker');
           ledger.event('target.host-breaker', { targetId: target.id, host });
           continue;
@@ -375,6 +435,7 @@ export class Runner {
         }
 
         const { result } = outcome;
+        if (['RISK_CONTROL', 'CAPTCHA', 'BOT_DETECTED'].includes(result.failure?.code)) hostBotBlocks.add(host);
         if (result.status === 'success') hostFailures.set(host, 0);
         else hostFailures.set(host, (hostFailures.get(host) || 0) + 1);
         const obs = {
@@ -396,23 +457,29 @@ export class Runner {
         };
         observations.push(obs);
         this.store.applyObservation(obs);
+        this.store.save();
 
+        const postIdMap = new Map();
+        const priorContentStates = new Map();
         for (const post of result.posts || []) {
+          const existing = Object.values(this.store.data.posts).find(p => canonicalUrl(p.url) === canonicalUrl(post.url));
           const normalized = {
-            id: post.id || postIdFor({ sourceId: post.sourceId, platform: post.platform, platformPostId: post.platformPostId, url: post.url }),
+            id: existing?.id || (post.id ? sanitizePostId(post.id) : postIdFor({ sourceId: post.sourceId, platform: post.platform, platformPostId: post.platformPostId, url: post.url })),
             sourceId: post.sourceId || target.sourceId,
             platform: post.platform || target.platform,
             url: canonicalUrl(post.url),
             title: post.title || '',
             publishedAt: post.publishedAt ?? null,
-            discoveredAt: post.discoveredAt || this.clock.nowIso(),
-            evidence: post.evidence || 'metadata',
-            evidenceUrl: post.evidenceUrl,
-            evidenceNote: post.evidenceNote || '',
+            discoveredAt: existing?.discoveredAt || post.discoveredAt || this.clock.nowIso(),
+            evidence: existing?.evidence && post.evidence === 'metadata' ? existing.evidence : post.evidence || 'metadata',
+            evidenceUrl: existing?.evidence !== 'metadata' && post.evidence === 'metadata' ? existing?.evidenceUrl || post.evidenceUrl : post.evidenceUrl,
+            evidenceNote: existing?.evidence !== 'metadata' && post.evidence === 'metadata' ? existing?.evidenceNote || post.evidenceNote || '' : post.evidenceNote || '',
             duration: post.duration ?? undefined,
             platformPostId: post.platformPostId,
             extra: post.extra,
           };
+          if (post.id) postIdMap.set(post.id, normalized.id);
+          if (existing) priorContentStates.set(normalized.id, existing);
           const existed = this.store.hasPost(normalized.id);
           this.store.upsertPost(normalized);
           if (!existed) {
@@ -427,9 +494,16 @@ export class Runner {
 
         for (const attempt of result.contentAttempts || []) {
           if (!attempt?.postId) continue;
-          this.store.applyContentAttempt(attempt.postId, attempt);
-          contentAttempts.push(attempt);
+          const mappedAttempt = { ...attempt, postId: postIdMap.get(attempt.postId) || sanitizePostId(attempt.postId) };
+          const prior = priorContentStates.get(mappedAttempt.postId);
+          if (mappedAttempt.status !== 'verified' && prior && (['verified', 'blocked'].includes(prior.contentStatus) || Date.parse(prior.nextContentAttemptAt) > Date.parse(mappedAttempt.checkedAt))) continue;
+          this.store.applyContentAttempt(mappedAttempt.postId, mappedAttempt);
+          contentAttempts.push(mappedAttempt);
         }
+        this.store.save();
+
+        await flushBatch();
+        if (pushFailed) break;
 
         ledger.target({
           durationMs: Date.now() - startedAt,
@@ -451,14 +525,18 @@ export class Runner {
         });
       }
 
-      const contentDone = await this.runContentQueue({
+      const contentDone = pushFailed ? [] : await this.runContentQueue({
         states,
         posts: this.store.data.posts,
         runCtx: { runId, evidenceDir },
         cap: this.policy?.budget?.contentCap || 4,
       });
       for (const c of contentDone) {
-        contentAttempts.push({ postId: c.postId, checkedAt: this.clock.nowIso(), status: c.status, note: c.note });
+        contentAttempts.push({ postId: c.postId, checkedAt: c.checkedAt, status: c.status, note: c.note, evidence: c.evidence });
+        if (c.status === 'verified' && ['fulltext', 'transcript', 'visual'].includes(c.evidence)) {
+          const stored = this.store.data.posts[c.postId];
+          newPosts.push({ ...stored, evidence: c.evidence, evidenceNote: c.note, extra: { ...stored.extra, evidenceFile: c.transcriptFile || c.evidenceFile } });
+        }
         if (c.status === 'verified') ledger.count('contentVerified');
         if (c.status === 'blocked') ledger.count('contentBlocked');
       }
@@ -477,34 +555,7 @@ export class Runner {
 
       const exchange = toExchangeResult({ runId, payload, targets, mode: queue.mode });
       writeJsonAtomic(path.join(evidenceDir, 'result.json'), exchange);
-
-      let pushResult = { skipped: true, reason: 'dry-run' };
-      if (!dryRun && this.site.canWrite && payload.observations.length) {
-        const key = IdempotencyStore.keyFor('collection', {
-          obs: payload.observations.map((o) => `${o.sourceId}|${o.platform}|${o.status}|${o.windowTo}`),
-          posts: payload.posts.map((p) => p.id),
-        });
-        if (this.idempotency.has(key)) {
-          pushResult = { skipped: true, reason: 'identical payload already pushed', key };
-          ledger.event('push.idempotent-skip', { key });
-        } else {
-          try {
-            const res = await this.site.pushCollection(payload, { idempotencyKey: key });
-            this.idempotency.remember(key, { runId, count: payload.observations.length });
-            ledger.count('pushed');
-            pushResult = { ok: true, response: res };
-            this.store.data.meta.lastPushAt = this.clock.nowIso();
-          } catch (err) {
-            ledger.count('pushFailed');
-            ledger.error({ stage: 'push', message: err.message });
-            pushResult = { ok: false, error: err.message };
-          }
-        }
-      } else if (dryRun) {
-        pushResult = { skipped: true, reason: 'dry-run 未写生产' };
-      } else if (!this.site.canWrite) {
-        pushResult = { skipped: true, reason: '未配置采编端凭据；结果包已生成，待维护者合并' };
-      }
+      await flushBatch();
 
       const summary = this.store.summary(new Date(this.clock.now()));
       this.store.data.meta.runCount += 1;
@@ -538,10 +589,8 @@ export class Runner {
     const localStates = this.store.allTargets();
     const checks = [];
     for (const [id, local] of Object.entries(localStates)) {
-      if (local.status !== 'success') continue;
       const remote = states[id];
-      const ok = Boolean(remote) && remote.checkedAt &&
-        Math.abs(new Date(remote.checkedAt) - new Date(local.checkedAt)) < 6 * HOUR;
+      const ok = Boolean(remote) && remote.checkedAt && Date.parse(remote.checkedAt) === Date.parse(local.checkedAt) && remote.status === local.status && (local.status !== 'success' || remote.lastSuccessWindowTo === local.lastSuccessWindowTo || remote.windowTo === local.windowTo);
       checks.push({
         targetId: id,
         localCheckedAt: local.checkedAt,
@@ -552,7 +601,7 @@ export class Runner {
     }
 
     const localPosts = Object.values(this.store.data.posts);
-    const postChecks = localPosts.slice(0, 50).map((p) => ({
+    const postChecks = localPosts.map((p) => ({
       postId: p.id,
       present: Boolean(posts[p.id]),
       remotePublishedAt: posts[p.id]?.publishedAt || null,
@@ -566,14 +615,40 @@ export class Runner {
       sourceExportedAt: data.sourceExportedAt,
       counts: {
         sources: sources.length,
-        states: states.length,
-        posts: posts.length,
+        states: Object.keys(states).length,
+        posts: Object.keys(posts).length,
         localStates: Object.keys(localStates).length,
       },
       targetChecks: checks,
       postChecks,
     };
   }
+}
+
+export function mergeRemotePosts(local = {}, remote = {}) {
+  const merged = { ...local };
+  for (const [id, post] of Object.entries(remote)) {
+    const previous = merged[id] || {};
+    const remoteAt = Date.parse(post.contentCheckedAt || post.updatedAt || 0) || 0;
+    const localAt = Date.parse(previous.contentCheckedAt || previous.updatedAt || 0) || 0;
+    merged[id] = remoteAt >= localAt ? { ...previous, ...post } : { ...post, ...previous };
+  }
+  return merged;
+}
+
+export function batchApplied(batch, queue) {
+  const states = Array.isArray(queue.states) ? indexByIdLocal(queue.states) : queue.states || {};
+  const posts = Array.isArray(queue.posts) ? indexByIdLocal(queue.posts) : queue.posts || {};
+  return (batch.observations || []).every(obs => {
+    const remote = states[`${obs.sourceId}::${encodeURIComponent(obs.url)}`];
+    return remote && Date.parse(remote.checkedAt) >= Date.parse(obs.checkedAt);
+  }) && (batch.posts || []).every(post => {
+    const remote = posts[post.id];
+    return remote && remote.publishedAt === post.publishedAt && (post.evidence === 'metadata' || remote.evidence === post.evidence);
+  }) && (batch.contentAttempts || []).every(attempt => {
+    const remote = posts[attempt.postId];
+    return remote && Date.parse(remote.contentCheckedAt) >= Date.parse(attempt.checkedAt);
+  });
 }
 
 function indexByIdLocal(list) {

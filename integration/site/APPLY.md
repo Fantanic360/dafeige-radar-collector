@@ -1,60 +1,39 @@
-# 站点侧补丁：目标租约 / 运行账本 / 幂等（E5）
+# 站点租约与幂等补丁：待生产接线
 
-**这份补丁没有直接改生产代码。** 本 Agent 没有该 Sites 项目的写入权限，也没有源码 checkout；下面是按 `08_站点接入约定.md` 记录的目录结构写好的可粘贴模块 + D1 迁移 + 接线步骤，由有权限的维护者复核后落地。
+状态：**模板已修复并通过离线并发测试，尚未部署。不能直接复制后宣称跨机安全。**
 
-## 为什么需要
+2026-11-14 复核修正了原版的三个问题：租约原先先 SELECT 再无条件 UPSERT，两个执行者可能都成功；幂等键原先在副作用之后才写入，会重复执行；路由原先假定 process.env.DB 且没有实际鉴权调用。
 
-现在的 `/api/collection` 能拒绝旧状态和重复原链，但**没有目标领取/心跳**。如果同时有两个执行者（定时任务 + 手工会话、或未来多 Agent），会出现：
+## 已实现
 
-1. 两个执行者检查同一目标 → 重复请求平台 → 更容易触发风控；
-2. 一快一慢，慢的用旧结果覆盖新的 `checkedAt`；
-3. 语音/推送在重试时重复调用供应商。
+- `lib/lease.ts` 用单条条件 UPSERT 领取，只有到期或同 owner 能写入；心跳不能复活已过期租约。
+- `assertLeases` 对缺失、过期和其他 owner 的租约都拒绝。
+- `lib/idempotency.ts` 在副作用前原子预留带 scope 的 key。并发请求返回冲突；发生异常保留预留，待核对实际结果后人工处理，不自动重做未知结果的配音或写入。
+- `app/api/collection/lease/route.ts` 提供 `createLeaseHandler({authorize,getDb})`，鉴权在解析请求与访问数据库之前。模板默认 POST 返回 503，防止未接线即启用。
+- D1 迁移只新增三张表。当前采集器仍只使用本地租约，尚未调用本站领取/心跳/释放路由。
 
-这三件事在单执行者时不会发生，所以不是「已发生的事故」，是**已知的并发缺口**。
+## 接线前必须确认
 
-## 改动清单
+1. 使用本站实际鉴权函数及 Worker D1 binding 获取方式；不能假设环境变量是 D1 对象。将 handler 绑定到既有受保护路由。
+2. 将 `assertLeases(db, body.observations, owner)` 放到 collection 写入前，并检查返回值 `.ok`。只有明确迁移策略时才能兼容无 owner 客户端；无 owner 放行不能称作全面并发互斥。
+3. 采集器同步实现远端领取、心跳、释放；应在发布结果之前一直持有有效租约。本地文件锁不能替代跨主机租约。
+4. `withIdempotency` 包裹实际事务/副作用，并把 `IDEMPOTENCY_IN_PROGRESS` 映射为 HTTP 409。预留键卡住时先核验已提交结果，不能盲目删键重试。
+5. 不把内部 owner、凭据、账本字段导出到公开镜像。
 
-| 文件 | 作用 |
-|---|---|
-| `migrations/0001_collection_leases.sql` | 三张表：`collection_leases`、`run_ledger`、`idempotency_keys` |
-| `lib/lease.ts` | 领取 / 续租 / 释放 / 回收过期（纯 SQL，无外部依赖） |
-| `lib/idempotency.ts` | 请求级幂等：同 key 只落一次，回放时返回首次结果 |
-| `app/api/collection/lease/route.ts` | `POST /api/collection/lease`：`claim` / `heartbeat` / `release` |
-| `app/api/collection/route.ts`（改动） | 在 POST 前校验租约；写入后写账本 |
-| `lib/collection.mjs`（改动） | `collectionInstructions` 增加 `lease` 说明，供外部 Agent 读到 |
-
-## 接线 5 步
-
-1. **迁移**：`wrangler d1 execute <DB> --file migrations/0001_collection_leases.sql`（先备份）。
-2. **新增路由**：把 `app/api/collection/lease/route.ts` 放到同名路径；它复用现有鉴权中间件，不新开权限。
-3. **POST 校验**：在现有 `app/api/collection/route.ts` 的 POST 开头插入：
+示例（函数名称须替换为本站已有实现）：
 
 ```ts
-const owner = request.headers.get('x-radar-owner');
-const leaseOk = owner ? await assertLease(env.DB, body, owner) : true; // 未带 owner 时保持旧行为
-if (!leaseOk) return json({ error: 'target lease held by another worker' }, { status: 409 });
+export const POST = createLeaseHandler({
+  authorize: request => existingSiteAuthorization(request),
+  getDb: request => existingSiteDatabase(request),
+});
+
+const leaseResult = await assertLeases(db, body.observations, owner);
+if (!leaseResult.ok) return Response.json({ error: 'lease conflict' }, { status: 409 });
 ```
 
-4. **写账本**：在写入成功后调用 `recordRun(env.DB, { runId, counts })`；失败也写一条，`status='failed'`。
-5. **回读**：`GET /api/data` 已经是公开快照，无需改动；`collection.states[].checkedAt` 会被 `verify` 用来核对。
+## 验收
 
-## 验收（照做，别口头宣布）
+离线模块验证：Node 24 执行 `node --test test/unit/site-integration.test.mjs`，使用内存 SQLite，不调用外网。
 
-- [ ] 两个进程同时 `claim` 同一 `targetId`：只有第一个拿到 `200`，第二个 `409` 且带 `holder`。
-- [ ] 领取后不续租，10 分钟后第二个进程可 `claim` 成功（过期回收）。
-- [ ] 带 `idempotency-key` 重复 POST 同一载荷：第二次返回首次结果，数据库不新增行。
-- [ ] 写入失败时 `run_ledger` 有 `status='failed'` 记录，且 `collection.states` 的 `lastSuccessfulAt` 未变。
-- [ ] 公开 `/api/data` 不出现 `owner`、令牌、内部队列字段。
-
-## 回滚
-
-只删新增路由与三张表即可；`POST` 校验在 `owner` 头缺失时是放行路径，所以老客户端不受影响。建议先在 staging 环境跑一遍上面 5 条验收。
-
-## 与采集器的对应关系
-
-采集器这边已经在本地实现了同样的语义（`src/lib/state.mjs` 的 `LeaseManager` + `IdempotencyStore`），所以：
-
-- 现在：单机多进程安全，跨机不安全；
-- 打了这个补丁：跨机也安全，`x-radar-owner` 由采集器的 `runId` 填充即可。
-
-两边的 TTL 建议一致：租约 10 分钟，心跳 30 秒。
+生产接线后仍需验证：并发 claim 只有一个成功；过期后接管；缺失租约不能写入；重复 key 只执行一次；失败结果有账本；公开镜像不出现内部字段；旧任务按迁移策略继续工作。通过前保持模板禁用，不创建第二套定时任务。

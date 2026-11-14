@@ -104,8 +104,12 @@ export function createHttpClient(opts = {}) {
     logger = null,
   } = opts;
 
-  async function request(url, { method = 'GET', headers = {}, body, signal, attemptTimeoutMs } = {}) {
+  async function request(url, { method = 'GET', headers = {}, body, signal, attemptTimeoutMs, timeoutMs: requestTimeoutMs, retries: requestRetries = retries, allowedOrigin = null } = {}) {
     const host = new URL(url).host;
+    if (allowedOrigin && new URL(url).origin !== allowedOrigin) {
+      throw new CollectError('请求地址不在授权来源范围内', { status: 'blocked', stage: 'security', code: 'ORIGIN_MISMATCH' });
+    }
+    const sensitive = Object.keys(headers).some((name) => /authorization|cookie|token|api[-_]?key|secret/i.test(name));
     if (breaker.isOpen(host)) {
       throw new CollectError(`主机熔断中：${host}`, {
         status: 'retry',
@@ -116,29 +120,49 @@ export function createHttpClient(opts = {}) {
     }
 
     let lastErr = null;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
+    for (let attempt = 0; attempt <= requestRetries; attempt += 1) {
       await limiter.acquire(host);
       try {
-        const timeout = AbortSignal.timeout(attemptTimeoutMs || timeoutMs);
+        const timeout = AbortSignal.timeout(attemptTimeoutMs || requestTimeoutMs || timeoutMs);
         const composed = signal ? AbortSignal.any([signal, timeout]) : timeout;
-        const res = await fetch(url, {
+        const requestHeaders = {
+          'user-agent': userAgent,
+          'accept-language': 'zh-CN,zh;q=0.9,en;q=0.6',
+          ...headers,
+        };
+        let redirectUrl = new URL(url);
+        let res;
+        for (let hop = 0; hop <= 5; hop += 1) {
+          res = await fetch(redirectUrl, {
           method,
-          headers: {
-            'user-agent': userAgent,
-            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.6',
-            ...headers,
-          },
+          headers: requestHeaders,
           body,
           signal: composed,
-          redirect: 'follow',
-        });
+          redirect: 'manual',
+          });
+          if (![301, 302, 303, 307, 308].includes(res.status)) break;
+          const location = res.headers.get('location');
+          if (!location) break;
+          const next = new URL(location, redirectUrl);
+          const crossOrigin = next.origin !== redirectUrl.origin;
+          await res.body?.cancel();
+          if (!['https:', 'http:'].includes(next.protocol) || next.username || next.password ||
+              (allowedOrigin && next.origin !== allowedOrigin) ||
+              (crossOrigin && (sensitive || body != null || !['GET', 'HEAD'].includes(method.toUpperCase())))) {
+            throw new CollectError('已拒绝跨来源重定向；认证信息和请求内容未转发', {
+              status: 'blocked', stage: 'security', code: 'UNSAFE_REDIRECT',
+            });
+          }
+          if (hop === 5) throw new CollectError('重定向次数超出限制', { status: 'retry', stage: 'http', code: 'REDIRECT_LIMIT' });
+          redirectUrl = next;
+        }
 
         if (!res.ok) {
           const retryAfter = res.headers.get('retry-after');
           const text = await res.text().catch(() => '');
-          const truncated = text.slice(0, 300).replace(/\s+/g, ' ');
+          const truncated = sensitive ? '[authenticated response omitted]' : text.slice(0, 300).replace(/\s+/g, ' ');
           breaker.recordFailure(host);
-          if (isRetryableStatus(res.status) && attempt < retries) {
+          if (isRetryableStatus(res.status) && attempt < requestRetries) {
             const waitMs = retryAfter
               ? Math.min(Number(retryAfter) * 1000 || 2000, 30_000)
               : 500 * 2 ** attempt + Math.random() * 250;
@@ -165,11 +189,11 @@ export function createHttpClient(opts = {}) {
       } catch (err) {
         lastErr = err;
         if (err instanceof CollectError) {
-          if (!err.retryable || attempt >= retries) throw err;
+          if (!err.retryable || attempt >= requestRetries) throw err;
         } else {
           breaker.recordFailure(host);
           const aborted = err.name === 'TimeoutError' || /aborted/i.test(err.message);
-          if (attempt >= retries) {
+          if (attempt >= requestRetries) {
             throw new CollectError(aborted ? `请求超时：${host}` : `网络失败：${err.message}`, {
               status: 'retry',
               stage: aborted ? 'timeout' : 'network',

@@ -94,14 +94,16 @@ async function readList(ctx, target) {
       return { mid, pageUrl: attempt.url, items: [...collected.values()], attempt: attempt.label };
     }
 
-    const looksBlocked = /安全验证|访问异常|人机验证|登录后查看|服务异常/.test(snap.bodyText || '');
-    if (looksBlocked) {
+    const challenge = /安全验证|人机验证|验证码|验证您是人类/.test(snap.bodyText || '');
+    const loginRequired = /登录后查看/.test(snap.bodyText || '');
+    const serviceFailure = /服务异常|访问异常|加载失败/.test(snap.bodyText || '');
+    if (challenge || loginRequired || serviceFailure) {
       await captureFailure(ctx, browser, `bilibili_${mid}_blocked`);
       throw new CollectError(`B站列表页出现访问限制提示（${attempt.label}）：${(snap.bodyText || '').slice(0, 80)}`, {
-        status: 'blocked',
+        status: challenge || loginRequired ? 'blocked' : 'retry',
         stage: 'extract',
-        code: 'RISK_CONTROL',
-        nextStep: '改用已授权的浏览器会话人工复跑，或先查同作者其他已核实平台',
+        code: challenge ? 'RISK_CONTROL' : loginRequired ? 'LOGIN_REQUIRED' : 'LIST_SERVICE_ERROR',
+        nextStep: challenge || loginRequired ? '停止当前入口探测，使用已授权路径或同作者其他已核实平台' : '保留失败窗口，按退避重试；普通服务异常不视作人机风控',
       });
     }
   }
@@ -151,8 +153,8 @@ async function fetchVideoMeta(ctx, bvid) {
 async function fetchPlayerExtras(ctx, bvid, cid) {
   const json = await ctx.http.json(`${API}/x/player/v2?bvid=${encodeURIComponent(bvid)}&cid=${cid}`, {
     headers: { referer: `https://www.bilibili.com/video/${bvid}` },
-  }).catch(() => null);
-  if (!json || json.code !== 0) return { subtitles: [], chapters: [] };
+  });
+  if (!json || json.code !== 0) throw new CollectError(`B站player接口未成功返回：${json?.code ?? 'no response'}`, { status: 'retry', stage: 'api', code: 'PLAYER_FETCH_FAILED' });
   const subtitles = json.data?.subtitle?.subtitles || [];
   const chapters = (json.data?.view_points || []).map((p) => ({
     start: p.from,
@@ -184,6 +186,8 @@ export const bilibiliAdapter = {
 
     const maxEnrich = Number(ctx.env?.biliMaxEnrich || 6);
     const candidates = items.slice(0, Math.max(maxEnrich, 6));
+    let metadataFailed = false;
+    const nonPinnedDates = [];
     const posts = [];
     const attempts = [];
     let oldest = null;
@@ -194,6 +198,7 @@ export const bilibiliAdapter = {
       try {
         meta = await fetchVideoMeta(ctx, item.bvid);
       } catch (err) {
+        metadataFailed = true;
         // A single deleted/private item must not fail the whole list read.
         attempts.push(
           contentAttempt(`${target.sourceId}-bilibili-${item.bvid}`, {
@@ -206,7 +211,7 @@ export const bilibiliAdapter = {
       }
 
       const ownerMid = String(meta.owner?.mid ?? '');
-      if (ownerMid && ownerMid !== String(mid)) {
+      if (!ownerMid || ownerMid !== String(mid)) {
         // Same title, different uploader: a reprint. Do not attribute it to the author.
         continue;
       }
@@ -214,6 +219,8 @@ export const bilibiliAdapter = {
       const parsed = parsePublished(meta.pubdate);
       const publishedAt = parsed.publishedAt;
       const createdMs = publishedAt && publishedAt.includes('T') ? new Date(publishedAt).getTime() : null;
+      if (!createdMs) metadataFailed = true;
+      if (createdMs && !item.pinned) nonPinnedDates.push(createdMs);
       if (createdMs) {
         if (!newest || createdMs > newest) newest = createdMs;
         if (!oldest || createdMs < oldest) oldest = createdMs;
@@ -228,7 +235,7 @@ export const bilibiliAdapter = {
 
       if (!inWindow) continue;
 
-      const extras = await fetchPlayerExtras(ctx, item.bvid, meta.cid).catch(() => ({ subtitles: [], chapters: [] }));
+      const extras = await fetchPlayerExtras(ctx, item.bvid, meta.cid).catch(err => ({ subtitles: [], chapters: [], error: err.message }));
       const postId = `${target.sourceId}-bilibili-${item.bvid}`;
 
       let evidence = 'metadata';
@@ -249,7 +256,7 @@ export const bilibiliAdapter = {
             attempts.push(
               contentAttempt(postId, {
                 status: 'verified',
-                note: `已取得官方字幕（${sub.lan || 'unknown'}）${cues.length} 条，覆盖全片。`,
+                note: `已取得官方字幕（${sub.lan || 'unknown'}）${cues.length} 条；实际覆盖 ${cues[0]?.from ?? '?'}–${cues.at(-1)?.to ?? '?'} 秒，不宣称全片覆盖。`,
                 checkedAt: fetchedAt,
                 evidence: 'transcript',
               }),
@@ -267,8 +274,8 @@ export const bilibiliAdapter = {
       } else {
         attempts.push(
           contentAttempt(postId, {
-            status: 'blocked',
-            note: `官方字幕接口返回空列表（view_points=${(extras.chapters || []).length} 个章节，时长 ${formatDuration(durationSeconds) || '未知'}）。仅元数据可核，不据此评价整片内容。`,
+            status: 'retry',
+            note: extras.error ? `官方字幕接口读取失败：${extras.error}；不能判断字幕是否存在。` : `官方字幕接口返回空列表（view_points=${(extras.chapters || []).length} 个章节，时长 ${formatDuration(durationSeconds) || '未知'}）。仅元数据可核，不据此评价整片内容，继续等待授权转录或原画面。`,
             checkedAt: fetchedAt,
           }),
         );
@@ -300,7 +307,9 @@ export const bilibiliAdapter = {
     const pagesRead = 1;
     const coveredFrom = oldest ? new Date(oldest).toISOString() : windowFrom;
 
-    result.status = 'success';
+    const ordered = nonPinnedDates.every((date, i) => i === 0 || date <= nonPinnedDates[i - 1]);
+    const boundaryReached = nonPinnedDates.some(date => date <= new Date(windowFrom).getTime());
+    result.status = !metadataFailed && ordered && boundaryReached ? 'success' : 'retry';
     result.pagesRead = pagesRead;
     result.itemsRead = candidates.length;
     result.oldestSeenAt = oldest ? new Date(oldest).toISOString() : null;
@@ -315,9 +324,10 @@ export const bilibiliAdapter = {
       `作品元数据来自官方 view 接口，置顶项${items.some((i) => i.pinned) ? '存在已按发布时间过滤' : '未出现'}。` +
       `本记录只证明列表覆盖，不代表整片已读。`;
 
-    if (posts.length === 0) {
+    if (posts.length === 0 && result.status === 'success') {
       result.note = `已读取 B站投稿列表 ${items.length} 张卡片（最旧 ${coveredFrom}），窗口 ${windowFrom} → ${windowTo} 内无新发布。仅覆盖本账号公开列表。`;
     }
+    if (result.status !== 'success') result.note += ' 前若干条或有限滚动未证明完整覆盖声明窗口（边界、排序或元数据存在缺口），成功游标不推进。';
 
     return result;
   },
@@ -336,11 +346,12 @@ export const bilibiliAdapter = {
     const sub = (extras.subtitles || []).find((s) => s.subtitle_url);
     if (!sub) {
       return {
-        status: 'blocked',
+        status: 'retry',
         note: `官方字幕轨为空；章节 ${(extras.chapters || []).length} 个。需要授权转录（ASR）或人工精读后才能升级为 transcript。`,
       };
     }
     const cues = await fetchSubtitleCues(ctx, sub);
+    if (!cues?.length) return { status: 'retry', note: '字幕轨返回空内容，未取得正文证据。' };
     const file = await ctx.saveEvidence(`${post.id}.srt`, cuesToSrt(cues));
     return {
       status: 'verified',

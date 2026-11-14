@@ -96,24 +96,24 @@ export const xiaoyuzhouAdapter = {
         publishedAt: parsed.publishedAt,
         datePrecision: parsed.datePrecision,
         discoveredAt: ctx.nowIso(),
-        evidence: notes.length > 400 ? 'fulltext' : 'metadata',
+        evidence: 'metadata',
         evidenceUrl: target.url,
         evidenceNote: `小宇宙页面 __NEXT_DATA__ 中的 pubDate=${ep.pubDate || ep.publishedAt}；节目简介 ${notes.length} 字。简介是作者自述，不等于整集音频已听。`,
         duration: Number(ep.duration) || null,
         platformPostId: ep.eid || null,
         extra: { showNotes: notes.slice(0, 4000) },
       });
-      if (notes.length <= 400) {
+      {
         attempts.push({
           postId,
           checkedAt: ctx.nowIso(),
           status: 'retry',
-          note: `节目简介仅 ${notes.length} 字，整集音频未转录`,
+          note: `取得节目简介 ${notes.length} 字，整集音频未转录；简介不作为已读正文。`,
         });
       }
     }
 
-    result.status = 'success';
+    result.status = oldest !== null && oldest <= new Date(windowFrom).getTime() && list.every(ep => parsePublished(ep.pubDate || ep.publishedAt).publishedAt?.includes('T')) ? 'success' : 'retry';
     result.pagesRead = 1;
     result.itemsRead = list.length;
     result.oldestSeenAt = oldest ? new Date(oldest).toISOString() : null;
@@ -125,7 +125,7 @@ export const xiaoyuzhouAdapter = {
     result.note =
       `已解析小宇宙播客页 ${list.length} 个单集（最旧 ${result.oldestSeenAt || '未知'}），` +
       `窗口内 ${posts.length} 条。发布时间取自页面结构化数据，非相对标签。` +
-      `本记录只覆盖该播客页，音频正文需另行转录。`;
+      `本记录只覆盖该播客页，音频正文需另行转录。${result.status === 'retry' ? '当前列表未证明覆盖声明窗口，成功游标不推进。' : ''}`;
     return result;
   },
 
@@ -133,7 +133,7 @@ export const xiaoyuzhouAdapter = {
     const notes = post.extra?.showNotes || '';
     if (notes.length > 400) {
       const file = await ctx.saveEvidence(`${post.id}.md`, `# ${post.title}\n\n${notes}\n`);
-      return { status: 'verified', note: `节目简介 ${notes.length} 字已入库（非音频转录）`, evidence: 'fulltext', transcriptFile: file };
+      return { status: 'retry', note: `节目简介 ${notes.length} 字已保存于 ${file}；不是音频转录，继续等待原片/可靠转写。`, evidence: 'metadata', evidenceFile: file };
     }
     return { status: 'blocked', note: '缺少节目简介正文；整集音频需授权转录后才能判定内容。' };
   },

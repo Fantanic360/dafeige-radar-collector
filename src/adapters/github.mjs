@@ -66,6 +66,7 @@ export const githubAdapter = {
     let newest = null;
     let oldest = null;
     let releaseCount = 0;
+    let incomplete = !Array.isArray(target.override?.repos) || !target.override.repos.length;
 
     for (const fullName of repos) {
       let releases;
@@ -74,9 +75,11 @@ export const githubAdapter = {
           headers: headers(ctx),
         });
       } catch (err) {
+        incomplete = true;
         continue; // a single repo 404/permission issue must not fail the account
       }
-      if (!Array.isArray(releases)) continue;
+      if (!Array.isArray(releases)) { incomplete = true; continue; }
+      if (releases.length >= 5 && !releases.some(rel => Date.parse(rel.published_at) <= Date.parse(windowFrom))) incomplete = true;
       releaseCount += releases.length;
 
       for (const rel of releases) {
@@ -88,6 +91,7 @@ export const githubAdapter = {
         if (ms < new Date(windowFrom).getTime() || ms > new Date(windowTo).getTime()) continue;
 
         const body = String(rel.body || '');
+        const evidenceFile = body ? await ctx.saveEvidence(`${target.sourceId}-${fullName.replace('/', '-')}-${rel.tag_name}.md`, body) : null;
         posts.push({
           id: `${target.sourceId}-github-${fullName.replace('/', '-')}-${rel.tag_name}`,
           sourceId: target.sourceId,
@@ -100,15 +104,15 @@ export const githubAdapter = {
           evidence: body.length > 400 ? 'fulltext' : 'metadata',
           evidenceUrl: `${API}/repos/${fullName}/releases`,
           evidenceNote: `GitHub 官方 API published_at=${rel.published_at}（=${parsed.publishedAt}）；${
-            body.length > 400 ? `完整发布说明 ${body.length} 字已读` : `发布说明仅 ${body.length} 字`
+            body.length > 400 ? `已取得发布说明 ${body.length} 字，完整保存于 ${evidenceFile}` : `发布说明仅 ${body.length} 字`
           }。仓库 ${fullName}，tag ${rel.tag_name}。`,
           platformPostId: `${fullName}@${rel.tag_name}`,
-          extra: { repo: fullName, tag: rel.tag_name, bodyChars: body.length, body: body.slice(0, 2000) },
+          extra: { repo: fullName, tag: rel.tag_name, bodyChars: body.length, body, evidenceFile },
         });
       }
     }
 
-    result.status = 'success';
+    result.status = incomplete ? 'retry' : 'success';
     result.pagesRead = repos.length;
     result.itemsRead = releaseCount;
     result.oldestSeenAt = oldest ? new Date(oldest).toISOString() : null;
@@ -118,7 +122,7 @@ export const githubAdapter = {
     result.cursor = { login, repos };
     result.note =
       `已读 GitHub 账号 ${login} 的 ${repos.length} 个公开仓库、共 ${releaseCount} 条 release，` +
-      `窗口 ${windowFrom} → ${windowTo} 内 ${posts.length} 条。GitHub 只反映代码发布，不等于该作者的视频/文章更新。`;
+      `窗口 ${windowFrom} → ${windowTo} 内 ${posts.length} 条。GitHub此适配器只查release，不覆盖账号全部活动。${incomplete ? '账号仓库或release分页范围未完整核对，成功游标不推进。' : '已覆盖明确配置的仓库release列表。'}`;
     return result;
   },
 

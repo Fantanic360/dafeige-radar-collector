@@ -50,6 +50,8 @@ export function reduceTargetState(prev = {}, obs) {
       return {
         ...base,
         status: 'success',
+        needsAttention: false,
+        pendingFrom: null,
         failCount,
         windowFrom: obs.windowFrom ?? prev.windowFrom,
         windowTo: obs.windowTo ?? checkedAt,
@@ -68,6 +70,7 @@ export function reduceTargetState(prev = {}, obs) {
         // Deliberately no nextDueAt: the auto queue must stop hammering a blocked entry.
         nextDueAt: null,
         needsAttention: true,
+        pendingFrom: prev.pendingFrom || obs.windowFrom || prev.lastSuccessWindowTo || null,
         lastFailureAt: checkedAt,
       };
     }
@@ -78,6 +81,7 @@ export function reduceTargetState(prev = {}, obs) {
         ...base,
         status: 'retry',
         failCount,
+        pendingFrom: prev.pendingFrom || obs.windowFrom || prev.lastSuccessWindowTo || null,
         lastFailureAt: checkedAt,
         // Success cursor is preserved on purpose: a failed run must never look like progress.
         lastSuccessfulAt: prev.lastSuccessfulAt,
@@ -93,11 +97,12 @@ export function reduceTargetState(prev = {}, obs) {
  * The operator runs the job at 08/10/12/14/16/18/20/22 Beijing time; only 10:00 is the
  * full-coverage edition run.
  */
-export function isEditionRound(date, { editionHour = DEFAULT_EDITION_HOUR, toleranceMinutes = 45 } = {}) {
+export function isEditionRound(date, { editionHour = DEFAULT_EDITION_HOUR } = {}) {
+  if (!date || !Number.isFinite(new Date(date).getTime())) return false;
   const beijing = new Date(new Date(date).getTime() + 8 * HOUR);
   const minutes = beijing.getUTCHours() * 60 + beijing.getUTCMinutes();
   const target = editionHour * 60;
-  return Math.abs(minutes - target) <= toleranceMinutes;
+  return minutes === target;
 }
 
 /**

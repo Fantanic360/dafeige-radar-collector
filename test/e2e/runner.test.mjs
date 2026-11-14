@@ -41,11 +41,13 @@ function startMockSite() {
   const received = [];
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
-    if (url.pathname === '/api/data') {
+    if (url.pathname === '/api/data' || url.pathname === '/api/context' || (url.pathname === '/api/collection' && req.method === 'GET')) {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(
         JSON.stringify({
           schemaVersion: 3,
+          states: received.flatMap((r) => r.observations || []).map((o) => ({ ...o, id: `${o.sourceId}::${encodeURIComponent(o.url)}` })),
+          posts: received.flatMap(r => r.posts || []).map(post => ({ ...post, contentCheckedAt: received.flatMap(r => r.contentAttempts || []).filter(a => a.postId === post.id).at(-1)?.checkedAt })),
           collection: { states: received.flatMap((r) => r.observations || []).map((o) => ({ ...o, id: `${o.sourceId}::${encodeURIComponent(o.url)}` })), posts: [] },
           sources: [
             {
@@ -172,7 +174,7 @@ test('runner: reports a blocked target without touching the success cursor', asy
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/api/data')) {
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ schemaVersion: 3, collection: { states: [], posts: [] }, sources: [] }));
+      res.end(JSON.stringify({ schemaVersion: 3, collection: { states: [], posts: [] }, sources: [{ id:'t1', name:'测试源', enabled:true, directoryStatus:'active', profiles:[{platform:'官网',status:'verified',url:`http://127.0.0.1:${server.address().port}/site`}] }] }));
       return;
     }
     res.writeHead(500).end('boom');
@@ -205,4 +207,22 @@ test('runner: reports a blocked target without touching the success cursor', asy
     await runner.close();
     server.close();
   }
+});
+
+test('runner flushes each completed target and preserves a failed batch for replay', async () => {
+  const configDir=tmp('radar-batch-cfg-'), rootDir=tmp('radar-batch-root-');
+  writeConfig(configDir,'http://127.0.0.1:1');
+  const runner=new Runner({env:{publicBase:'http://127.0.0.1:1',browserTier:false},logger:createLogger({level:'error'}),rootDir,configDir});
+  const sources=['t1','t2','t3'].map(id=>({id,name:id,enabled:true,profiles:[{platform:'官网',status:'verified',url:`https://example.test/${id}`}]}));
+  let writes=0, reads=0;
+  const applied={};
+  runner.site={mode:'editorial',canWrite:true,fetchQueue:async()=>({sources,states:applied,posts:{}}),pushCollection:async payload=>{ writes++; assert.equal(payload.observations.length,1); if(writes===2) throw new Error('simulated unavailable'); for(const o of payload.observations)applied[`${o.sourceId}::${encodeURIComponent(o.url)}`]=o; return {ok:true}; }};
+  runner.runTarget=async target=>{reads++;return {target,result:{status:'success',note:'已核列表',windowFrom:'2026-11-13T00:00:00Z',windowTo:'2026-11-14T00:00:00Z',pagesRead:1,itemsRead:1,posts:[],contentAttempts:[]}};};
+  const out=await runner.runOnce({scheduledFor:'2026-11-14T08:00:00+08:00'});
+  assert.equal(reads,2,'stops before a third target after write failure');
+  assert.equal(writes,2,'writes immediately after each target');
+  assert.equal(out.pushResult.ok,false);
+  const saved=JSON.parse(fs.readFileSync(path.join(rootDir,'state/state.json'),'utf8'));
+  assert.equal(saved.meta.pendingCollectionBatches.length,1);
+  assert.equal(saved.meta.pendingCollectionBatches[0].payload.observations[0].sourceId,'t2');
 });

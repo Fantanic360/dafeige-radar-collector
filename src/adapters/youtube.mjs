@@ -96,7 +96,7 @@ export const youtubeAdapter = {
       });
     }
 
-    result.status = 'success';
+    result.status = parsed.items.length > 0 && oldest !== null && oldest <= new Date(windowFrom).getTime() && parsed.items.every(item => parsePublished(item.rawDate).publishedAt?.includes('T')) ? 'success' : 'retry';
     result.pagesRead = 1;
     result.itemsRead = parsed.items.length;
     result.oldestSeenAt = oldest ? new Date(oldest).toISOString() : null;
@@ -104,7 +104,7 @@ export const youtubeAdapter = {
     result.posts = posts;
     result.evidenceUrl = feedUrl;
     result.cursor = { channelId, feedUrl };
-    result.note = `已读取 YouTube 频道 RSS（${parsed.items.length} 条，channelId=${channelId}），窗口内 ${posts.length} 条。仅元数据，未取得字幕。`;
+    result.note = `已读取 YouTube 频道 RSS（${parsed.items.length} 条，channelId=${channelId}），窗口内 ${posts.length} 条。仅元数据，未取得字幕。${result.status === 'retry' ? '有限RSS条目未证明覆盖声明窗口，成功游标不推进。' : ''}`;
     return result;
   },
 

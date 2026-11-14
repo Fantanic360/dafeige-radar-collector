@@ -10,10 +10,22 @@ export async function withIdempotency<T>(
   run: () => Promise<T>,
 ): Promise<{ replayed: boolean; value: T | unknown }> {
   if (!key) return { replayed: false, value: await run() };
-
+  const scopedKey = `${scope}:${key}`;
+  const claimed = await db
+    .prepare('INSERT OR IGNORE INTO idempotency_keys (key, scope, run_id, created_at, response) VALUES (?, ?, ?, ?, NULL)')
+    .bind(scopedKey, scope, runId, new Date().toISOString())
+    .run();
+  if ((claimed.meta?.changes ?? 0) > 0) {
+    // Keep the reservation after an exception: a timed-out side effect may have succeeded.
+    // A human must reconcile an unknown outcome before this key can be released.
+    const value = await run();
+    await db.prepare('UPDATE idempotency_keys SET response = ? WHERE key = ?')
+      .bind(JSON.stringify(value) ?? 'null', scopedKey).run();
+    return { replayed: false, value };
+  }
   const hit = await db
     .prepare('SELECT response FROM idempotency_keys WHERE key = ?')
-    .bind(key)
+    .bind(scopedKey)
     .first<{ response: string }>();
   if (hit?.response) {
     try {
@@ -23,12 +35,9 @@ export async function withIdempotency<T>(
     }
   }
 
-  const value = await run();
-  await db
-    .prepare('INSERT OR IGNORE INTO idempotency_keys (key, scope, run_id, created_at, response) VALUES (?, ?, ?, ?, ?)')
-    .bind(key, scope, runId, new Date().toISOString(), JSON.stringify(value))
-    .run();
-  return { replayed: false, value };
+  const error = new Error('Idempotency key is in progress or requires outcome reconciliation');
+  Object.assign(error, { code: 'IDEMPOTENCY_IN_PROGRESS', status: 409 });
+  throw error;
 }
 
 export async function recordRun(

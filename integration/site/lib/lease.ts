@@ -16,6 +16,11 @@ export interface LeaseRow {
 
 const TTL_MS = 10 * 60_000;
 
+export function validTtl(ttlMs: number = TTL_MS): number {
+  if (!Number.isInteger(ttlMs) || ttlMs < 1000 || ttlMs > 30 * 60_000) throw new Error('ttlMs must be 1000..1800000');
+  return ttlMs;
+}
+
 export async function claimLease(
   db: D1Database,
   targetId: string,
@@ -24,16 +29,8 @@ export async function claimLease(
 ): Promise<{ ok: boolean; holder?: LeaseRow }> {
   const now = Date.now();
   const iso = new Date(now).toISOString();
-  const existing = await db
-    .prepare('SELECT * FROM collection_leases WHERE target_id = ?')
-    .bind(targetId)
-    .first<LeaseRow>();
-
-  if (existing && existing.expires_at > now && existing.owner !== owner) {
-    return { ok: false, holder: existing };
-  }
-
-  await db
+  validTtl(ttlMs);
+  const result = await db
     .prepare(
       `INSERT INTO collection_leases (target_id, owner, acquired_at, heartbeat_at, expires_at)
        VALUES (?, ?, ?, ?, ?)
@@ -41,19 +38,22 @@ export async function claimLease(
          owner = excluded.owner,
          acquired_at = excluded.acquired_at,
          heartbeat_at = excluded.heartbeat_at,
-         expires_at = excluded.expires_at`,
+         expires_at = excluded.expires_at
+       WHERE collection_leases.expires_at <= ? OR collection_leases.owner = excluded.owner`,
     )
-    .bind(targetId, owner, existing?.acquired_at ?? iso, iso, now + ttlMs)
+    .bind(targetId, owner, iso, iso, now + ttlMs, now)
     .run();
-
-  return { ok: true };
+  if ((result.meta?.changes ?? 0) > 0) return { ok: true };
+  const holder = await db.prepare('SELECT * FROM collection_leases WHERE target_id = ?').bind(targetId).first<LeaseRow>();
+  return { ok: false, ...(holder ? { holder } : {}) };
 }
 
 export async function heartbeatLease(db: D1Database, targetId: string, owner: LeaseOwner, ttlMs = TTL_MS) {
   const now = Date.now();
+  validTtl(ttlMs);
   const res = await db
-    .prepare('UPDATE collection_leases SET heartbeat_at = ?, expires_at = ? WHERE target_id = ? AND owner = ?')
-    .bind(new Date(now).toISOString(), now + ttlMs, targetId, owner)
+    .prepare('UPDATE collection_leases SET heartbeat_at = ?, expires_at = ? WHERE target_id = ? AND owner = ? AND expires_at > ?')
+    .bind(new Date(now).toISOString(), now + ttlMs, targetId, owner, now)
     .run();
   return (res.meta?.changes ?? 0) > 0;
 }
@@ -73,19 +73,19 @@ export async function reclaimExpired(db: D1Database, now = Date.now()) {
 
 /**
  * POST /api/collection 的守卫：请求里声明的每个目标都必须由调用方持有租约。
- * 未携带 owner 的旧客户端保持放行（向后兼容），但会在响应头里标记 deprecated。
+ * 缺失、过期或不属于 owner 的租约都拒绝；兼容老客户端的策略由站点接线决定。
  */
 export async function assertLeases(db: D1Database, observations: Array<{ sourceId: string; url?: string }>, owner: string) {
   const now = Date.now();
   const missing: string[] = [];
   for (const obs of observations) {
-    if (!obs.url) continue;
+    if (!obs.url) { missing.push(`${obs.sourceId}::missing-url`); continue; }
     const targetId = `${obs.sourceId}::${encodeURIComponent(obs.url)}`;
     const row = await db
       .prepare('SELECT owner, expires_at FROM collection_leases WHERE target_id = ?')
       .bind(targetId)
       .first<{ owner: string; expires_at: number }>();
-    if (row && row.expires_at > now && row.owner !== owner) missing.push(targetId);
+    if (!row || row.expires_at <= now || row.owner !== owner) missing.push(targetId);
   }
   return { ok: missing.length === 0, conflicts: missing };
 }
